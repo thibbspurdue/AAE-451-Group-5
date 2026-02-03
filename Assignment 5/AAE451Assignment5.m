@@ -38,10 +38,19 @@ seroc_rate = 500 * u.ft / u.min; % at approach config(?)
 % Propulsion
 
 %% Section 4: Analysis Tasks
-
+%%% 4A: Carrier Limits
 % Task A-1: Landing Constraint
 
 % Task A-2: Takeoff Constraint
+
+
+%%% 4B: Performance Limits
+
+function twr = twr(beta, alpha, q, S, W_TO, n, K_1, K_2, C_D0, C_DR, P_s, V) % Mattingly eq. 2.11
+    twr = K_1 .* (n .* beta .* W_TO ./ q ./ S).^2 + K_2 .* (n .* beta .* W_TO ./ q ./ S) + C_D0 + C_DR;
+    twr = (twr .* ((q .* S) / (beta .* W_TO))) + (P_s ./ V);
+    twr = twr .* beta / alpha;
+end
 
 % Task B-1: Supersonic Dash
 
