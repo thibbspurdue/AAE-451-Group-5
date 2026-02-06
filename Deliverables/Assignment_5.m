@@ -46,15 +46,6 @@ turn_rate = 8 * u.deg / u.s;
 seroc_rate = 500 * u.ft / u.min; % at approach config
 
 
-%% Section 3: Engineering Assumptions
-
-% Aerodynamics
-
-% Weight Fractions
-
-% Propulsion
-
-
 %% Section 4: Analysis Tasks
 
 %%% 4A: Carrier Limits
