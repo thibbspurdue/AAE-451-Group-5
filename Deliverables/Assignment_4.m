@@ -1,18 +1,11 @@
 % AAE 451 
 % Assignment 4
-%%%%%%%%%%%%%%%%%%%%%%%%% THINGS THAT NEED FIXED %%%%%%%%%%%%%%%%%%%%%%%%%
-% 2) Area of the tails, horizontal AND vertical need to be calculated
-% (Lines 52-55) <- Resolved(Min), moved to line 67~68
-% 5) Verify assumptions that M_DD and k_sup use t/c and LES of the WING,
-% respectively (Lines 203 and 210)
-% 7) Note: Everything has been converted to FEET and DEGREES 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %% Variable definitions
 
 % Weight and Geometry
 W = 66000;                % Weight, lb
-KA = 0.95;                % Supercritical airfoil number thing slide 10
+KA = 0.95;                % Supercritical airfoild number thing slide 10
 AR = 4;                   % Aspect Ratio
 d_f = 2.165*3.2808399;    % Fuselage diameter, converted from m to ft
 l_f = 60.299;             % Fuselage length (ft) from excel --> 18.379 m
@@ -30,14 +23,12 @@ ch_w = (c_r + c_t)/2;
 %ch_w = 15.0369;           % Chord length of the wing (ft) --> 4.58325 m
 S = 500;                  % Wing reference area, ft^2
 S_w = S;                  % Wing area, ft^2, (should subtract fuselage overlap)
-
 % Horizontal Tail Geometry
 t_c_ht = .04;             % thickness over chord (dimensionless)
 MCS_ht = 31.943 * (pi/180);          % Mid chord sweep (deg)
 QCS_ht = 48.28571 * (pi/180);        % Quarter chord sweep (deg)
 LES_ht = 53.12 * (pi/180);           % Leading edge sweep (deg)
 ch_ht = 9.18635;          % Chord length of the horizontal tail (ft) --> 2.8 m
-
 % Vertical Tail Geometry
 t_c_vt = .04;             % thickness over chord (dimensionless)
 MCS_vt = 36.3239 * (pi/180);         % Mid chord sweep (deg)
@@ -68,7 +59,6 @@ M_DW_peak = 1.25;         % Mach at peak CDW
 %e = 0.98 * (1 - (d_f/b)^2); 
 e = 4.61 * (1 - 0.045*AR^0.68) * (cos(LES_w)^0.15) - 3.1;
 %% Part 1: Subsonic Analysis & Vortex Lift
-
 %AoA = linspace(-5, 30, 251);
 AoA = linspace(-pi/12, pi/3, 251);
 Kp = (2*pi*AR) / (2 + sqrt(AR^2 * (1 + tan(MCS_w)) + 4)); %% ASSUMING MCS_W %%
@@ -79,9 +69,7 @@ C_L = C_Lp + C_Lv;
 C_L_noVortex = C_Lp;
 %disp("Lift Coefficient")
 %disp(C_L)
-
 %% Part 2: Parasitic Drag Estimation
-
 %M = V/a; % We are using the mach of the flight conditions given
 %Form Factor
 % Fuselage
@@ -160,68 +148,49 @@ C_Di = K_sub * (C_L.^2);
 C_Di_noVortex = K_sub * (C_L_noVortex.^2);
 C_D = C_D0 + C_Di;
 C_D_noVortex = C_D0 + C_Di_noVortex;
-
 %% Part 3: Supersonic Effects and Cruise Efficiency
-
 % Iteration Variables
 Machs = linspace(0, 2.5, 53);
 C_D_wakes = Machs * 0;
 C_D_is = Machs * 0;
 Ks = Machs * 0;
-
 for i = 1:length(Machs)
     M = Machs(i);
-
     % ---- Required CL at this Mach for level flight ----
     V_M = M * a;                         % ft/s (since you fixed a)
     q_M = 0.5 * p * V_M^2;               % consistent with slug/ft^3 and ft/s
     C_L_M = W / (q_M * S_w);
-
     K_sub_thresh = 1 / (pi * AR * e);
-
     Msq_minus_1 = max(M^2 - 1, 1e-9);
     Msqpk_minus_1 = max(M_DW_peak^2 - 1, 1e-9);
-
     K_sup_thresh = AR * Msqpk_minus_1 * cos(LES_w) / (4 * AR * sqrt(Msqpk_minus_1) - 2);
-
     % ---- Wake drag + K in regions ----
     if (M >= M_crit)
-
         if (M >= M_DW_peak)
             %% Supersonic Region (decay; continuous at M_DW_peak)
             C_D_wake = C_DW_peak * sqrt(Msqpk_minus_1) / sqrt(Msq_minus_1);
-
             K = AR * Msq_minus_1 * cos(LES_w) / (4 * AR * sqrt(Msq_minus_1) - 2);
-
         else
             %% Transonic Region (Gundlach cubic ramp to the peak)
             scal = C_DW_peak/(M_DW_peak - M_crit)^3;
             C_D_wake = scal * (M - M_crit)^3; % Gundlach Ch. 5 (5.46)
-
             % Smooth blend 
             x = (M - M_crit) / (M_DW_peak - M_crit);
             x = max(0, min(1, x));
             w = x^2 * (3 - 2*x);  % smoothstep
-
             K = (1-w)*K_sub_thresh + w*K_sup_thresh;
         end
-
     else
         %% Subsonic Region
         C_D_wake = 0;
         K = K_sub_thresh;
     end
-
     % ---- Save values ----
     C_D_wakes(i) = C_D_wake;
     Ks(i) = K;
-
     % ---- Induced drag at this Mach (this was missing) ----
     C_D_is(i) = K * (C_L_M^2);
 end
-
-
-
 % Plotting the required graphs
 % Plot 1
 C_D_ZL = C_D0 + C_D_wakes;
@@ -231,7 +200,6 @@ title('Total Zero-Lift Drag Rise with Mach Number');
 xlabel("Mach")
 ylabel("C_{DZL}")
 grid on;
-
 % Plot 2
 LDMax = 1./sqrt(4.*C_D0.*Ks);
 figure;
@@ -240,7 +208,6 @@ xlabel("Mach")
 ylabel('(L/D)_{max}');
 title('Maximum Lift-to-Drag Ratio vs Mach');
 grid on;
-
 % Plot 3
 Effic_Index = Machs.*LDMax;
 figure;
@@ -249,7 +216,6 @@ xlabel('Mach');
 ylabel('Mach × (L/D)_{max}');
 title('Cruise Efficiency Index vs Mach');
 grid on;
-
 % %debugging plot
 % LDMax1 = 1./sqrt(C_D_ZL + Ks);
 % LDMax2 = 1./sqrt(C_D0 + Ks);
@@ -270,18 +236,15 @@ grid on;
 % legend('1./sqrt(C_D_ZL + Ks)', '1./sqrt(C_D0 + Ks)', '1./sqrt(4*C_D_ZL*Ks)', '1./sqrt(4*C_D0*Ks)')
 % title("Efficency")
 %CL vs Alpha
-
 figure;
 plot(AoA*180/pi, C_L_noVortex); 
 hold on;
 plot(AoA*180/pi, C_L);
-
 xlabel('Angle of Attack (deg)');
 ylabel('CL');
 title('Lift Curve: Linear vs Vortex Lift (LEX Effect)');
 legend('Linear Lift Only', 'With Leading Edge Vortex', 'Location','Best');
 grid on;
-
 %Subsonic Drag polar
 figure;
 plot(C_D, C_L)
@@ -292,11 +255,7 @@ legend('Without Vortex Lift', 'With Vortex Lift', 'Location','Best');
 xlabel("CD")
 ylabel("CL")
 grid on;
-
-
-
 %% Additional graphs
-
 CD0_components = (FF .* Q .* C_f .* S_wet) / S_ref;
 labels = {'Fuselage','Wing','H Tail','V Tail','Nacelles'};
 figure;
@@ -305,7 +264,6 @@ set(gca,'XTickLabel',labels)
 ylabel('C_{D0} Contribution')
 title('Zero-Lift Drag Breakdown by Component')
 grid on;
-
 figure;
 plot(Machs, Ks, 'LineWidth', 2);
 xlabel('Mach Number');
