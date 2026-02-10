@@ -1,12 +1,6 @@
 % AAE 451 
 % Assignment 4
-%%%%%%%%%%%%%%%%%%%%%%%%% THINGS THAT NEED FIXED %%%%%%%%%%%%%%%%%%%%%%%%%
-% 2) Area of the tails, horizontal AND vertical need to be calculated
-% (Lines 52-55) <- Resolved(Min), moved to line 67~68
-% 5) Verify assumptions that M_DD and k_sup use t/c and LES of the WING,
-% respectively (Lines 203 and 210)
-% 7) Note: Everything has been converted to FEET and DEGREES 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 %% Variable definitions
 % Weight and Geometry
 W = 66000;                % Weight, lb
