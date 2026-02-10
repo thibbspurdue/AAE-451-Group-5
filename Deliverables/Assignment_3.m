@@ -15,7 +15,7 @@ Combat_L_D = 4.5;      % Assignment 4
 Loiter_L_D = 11;       % Assignment 4
 Kvs = 1;               % 1 for fixed wing sweep
 AR = 4;                % 
-Wing_loading = 80;  %lb/ft^2
+Wing_loading = 80;     %lb/ft^2
 Thrust_Weight = 1.3;
  
 %% Fixed Parameters
@@ -24,7 +24,7 @@ W_crew = 215;       %lbs, Assignment 3
 W1_W0 = 0.970;      % Assingment 3
 W2_W1 = 0.985;      % Assignment 3
 Combat_Time = 2;    % min, RFP
-Combat_Speed = 1.6; % Mach 2 is desired, RFP
+Combat_Speed = 2; % Mach 2 is desired, RFP
 Loiter_Time = 20;   % minutes
 W7_W6 = 0.995;      % Assignment 3
 Cruise_Out = 700;   % NM, RFP
