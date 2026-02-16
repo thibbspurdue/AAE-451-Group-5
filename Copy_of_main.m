@@ -6,9 +6,10 @@
 %% Initialisation
 
 % Unit setup
-Assignment_6
+u = symunit; % Initialise symbolic units object
+g = 9.81; % m*s^-2
 
-wing_loading_range = ul(unitConvert([40 140] * u.lbf / (u.ft^2), u.N / (u.m^2)));
+wing_loading_range = ul(unitConvert([40 160] * u.lbf / (u.ft^2), u.N / (u.m^2)));
 fprintf("Wing loading range: %d - %d Pa\n", wing_loading_range);
 wing_loading_range = linspace(wing_loading_range(1), wing_loading_range(2), 511);
 
@@ -29,7 +30,7 @@ K_takeoff = 1.1; % from slide 19 and Mattingly p.34
 
 % Carrier landing, RFP 3.2.2
 v_approach = 140 * u.kts + 0 * u.kts; % typical V_eng from Mattingly p.34, RFP limits approach < 145kn. Should calculate better minimum approach speed from stall margin(?)
-C_L_max = 2; % assignment 4 needs to be fixed, temporarily borrowing value from Mattingly p.43
+C_L_max = 2; % assignment 4 needs to be fixed, temporarily borrwing value from Mattingly p.43
 
 % Carrier takeoff, RFP 3.2.1
 v_takeoff = 120 * u.kts + 0 * u.kts; % 20 kn WoD from slide 19, 0kn from RFP
@@ -79,20 +80,24 @@ for i = 1:length(turn_speeds)
 end
 
 % Task B-4: SEROC, 500 ft/min single-engine in approach config, wet thrust?
-p_seroc = FlightPhase(0, beta_landing, "Low-bypass turbofan, wet thrust", velocity=v_approach, dh_dt=500*u.ft/u.min);
+p_seroc = FlightPhase(0, beta_landing, "Low-bypass turbofan, wet thrust", velocity=v_approach, dh_dt=seroc_rate);
 twr_seroc = p_seroc.twr(wing_loading_range, 0.0195, 0.0955);
 
 figure(1)
 hold on
-plot(wing_loading_range, twr_supersonic)
+wing_loading_range = ul(unitConvert(wing_loading_range * u.Pa, u.lbf / u.ft^2));
+max_loading_takeoff = ul(unitConvert(max_loading_takeoff * u.Pa, u.lbf / u.ft^2));
+max_loading_approach = ul(unitConvert(max_loading_approach * u.Pa, u.lbf / u.ft^2));
+plot(wing_loading_range, twr_supersonic, "k-")
 plot(wing_loading_range, twr_strike)
 plot(wing_loading_range, twr_turn(1,:))
 plot(wing_loading_range, twr_turn(2,:))
 plot(wing_loading_range, twr_turn(3,:))
 plot(wing_loading_range, twr_seroc)
 
-xline(max_loading_takeoff);
-xline(max_loading_approach)
+xline(max_loading_takeoff, "r-");
+xline(max_loading_approach, "g-")
+grid on
 
-legend("supersonic", "subsonic", "turn1", "turn2", "turn3", "SEROC", "Take-Off Limit", "Landing Limit")
+legend("Supersonic Dash", "Strike Dash", "M0.7 Turn", "M0.8 Turn", "M0.9 Turn", "SEROC", "Takeoff Limit", "Approach Limit")
 hold off
