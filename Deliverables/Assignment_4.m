@@ -2,42 +2,48 @@
 % Assignment 4
 
 %% Variable definitions
+u = symunit;              % MATLAB trig functions work with symbolic units
 
 % Weight and Geometry
-W = 66000;                % Weight, lb
+W = 66000 * u.lb;         % Weight, lb
 KA = 0.95;                % Supercritical airfoild number thing slide 10
 AR = 4;                   % Aspect Ratio
-d_f = 2.165*3.2808399;    % Fuselage diameter, converted from m to ft
-l_f = 60.299;             % Fuselage length (ft) from excel --> 18.379 m
-b = 44.9;                 % wingspan (ft)
-S_ref = 500;              % not super sure if this is S or not
-  
+
+fslg.diam = 2.165 * u.m;
+fslg.len = 18.379 * u.m;
+
 % Wing Geometry
-t_c_w = 0.04;             % thickness over chord wing (dimensionless)
-MCS_w = 19.52 * (pi/180); % Mid chord sweep (deg)
-QCS_w = 25 * (pi/180);    % Quarter chord sweep (deg)
-LES_w = 30 * (pi/180);    % Leading edge sweep (deg)
-c_r = 4.611 * 3.2808399;  % the root chord
-c_t = 1.5 * 3.2808399;
-ch_w = (c_r + c_t)/2;
-%ch_w = 15.0369;           % Chord length of the wing (ft) --> 4.58325 m
-S = 500;                  % Wing reference area, ft^2
-S_w = S;                  % Wing area, ft^2, (should subtract fuselage overlap)
+wing.span = 44.9 * u.ft;
+wing.len.chord_root = 4.611 * u.m;
+wing.len.chord_tip = 1.5 * u.m;
+wing.len.chord_mean = (wing.len.chord_root + wing.len.chord_tip) / 2;
+
+wing.area.ref = 500 * u.ft^2;
+wing.area.wet = wing.area.ref - 0 * u.ft^2;
+
+wing.thickness_over_chord = 0.04;
+wing.sweep.LE = 30 * u.deg;
+wing.sweep.QC = 25 * u.deg;
+wing.sweep.MC = 19.52 * u.deg;
+
 % Horizontal Tail Geometry
-t_c_ht = .04;             % thickness over chord (dimensionless)
-MCS_ht = 31.943 * (pi/180);          % Mid chord sweep (deg)
-QCS_ht = 48.28571 * (pi/180);        % Quarter chord sweep (deg)
-LES_ht = 53.12 * (pi/180);           % Leading edge sweep (deg)
-ch_ht = 9.18635;          % Chord length of the horizontal tail (ft) --> 2.8 m
+tail_h.len.chord_mean = 2.8 * u.m;
+tail_h.area_ref = (2 * 3.56067 * 0.5 * (4.10919 + 1.112)) * 10.7639; % 10.7639 is m2 to ft2 conversion
+
+tail_h.thickness_over_chord = 0.04;
+tail_h.sweep.LE = 53.12 * u.deg;
+tail_h.sweep.QC = 48.28571 * u.deg;
+tail_h.sweep.MC = 31.943 * u.deg;
+
 % Vertical Tail Geometry
-t_c_vt = .04;             % thickness over chord (dimensionless)
-MCS_vt = 36.3239 * (pi/180);         % Mid chord sweep (deg)
-QCS_vt = 42.52679 * (pi/180);        % Quarter chord sweep (deg)
-LES_vt = 47.69 * (pi/180);           % Leading edge sweep (deg)
-ch_vt = 10.3937;          % Chord length of the vertical tail (ft) --> 3.168 m
-%% NEED S_HT AND S_VT%%%%%%%%%%%%
-S_ht = (2 * 3.56067 * 0.5 * (4.10919 + 1.112)) * 10.7639; % 10.7639 is m2 to ft2 conversion
-S_vt = (2 * 3.7 * 0.5 * (4.51 + 1.82)) * 10.7639;
+tail_v.area_ref = (2 * 3.7 * 0.5 * (4.51 + 1.82)) * 10.7639; % rewrite as w/ vtail
+tail_v.len.chord_mean = 3.168 * u.m;
+
+tail_v.thickness_over_chord = .04;
+tail_v.sweep.LE = 47.69 * u.deg;
+tail_v.sweep.QC = 42.52679 * u.deg;
+tail_v.sweep.MC = 36.3239 * u.deg;
+
 %% NEED S_HT AND S_VT%%%%%%%%%%%%
 % Nacelle Geometry
 l_N = 29.9367;            % Nacelle length (ft) --> 8.2103 m
@@ -54,42 +60,46 @@ mu = 2.969*10^-7;         % kinematic viscosity (slug/(ft s))
 % Wake Drag Conditions
 C_DW_peak = .058;         % peak CDW
 M_DW_peak = 1.25;         % Mach at peak CDW
+
 %% Part 0.5 
 % Oswald effciency factor
-%e = 0.98 * (1 - (d_f/b)^2); 
-e = 4.61 * (1 - 0.045*AR^0.68) * (cos(LES_w)^0.15) - 3.1;
+%e = 0.98 * (1 - (fslg.diam/b)^2); 
+e = 4.61 * (1 - 0.045*AR^0.68) * (cos(wing.sweep.LE)^0.15) - 3.1;
+
 %% Part 1: Subsonic Analysis & Vortex Lift
 %AoA = linspace(-5, 30, 251);
 AoA = linspace(-pi/12, pi/3, 251);
-Kp = (2*pi*AR) / (2 + sqrt(AR^2 * (1 + tan(MCS_w)) + 4)); %% ASSUMING MCS_W %%
-Kv = pi * AR / 2 / cos(LES_w); %% ASSUMING LES_W %%
+Kp = (2*pi*AR) / (2 + sqrt(AR^2 * (1 + tan(wing.sweep.MC)) + 4)); %% ASSUMING MCS_W %%
+Kv = pi * AR / 2 / cos(wing.sweep.LE); %% ASSUMING LES_W %%
 C_Lp = Kp * sin(AoA).*(cos(AoA).^2);
 C_Lv = Kv * (sin(AoA).^2).*cos(AoA);
 C_L = C_Lp + C_Lv;
 C_L_noVortex = C_Lp;
 %disp("Lift Coefficient")
 %disp(C_L)
+
 %% Part 2: Parasitic Drag Estimation
 %M = V/a; % We are using the mach of the flight conditions given
 %Form Factor
+
 % Fuselage
-lamf = l_f/d_f;                             % fineness ratio for fuselage
+lamf = fslg.len/fslg.diam;                             % fineness ratio for fuselage
 FFf = 0.9 + 5 / (lamf^(1.5)) + lamf / 400;  % Raymer 6th ed
 % Wings
-Z_w = (2 - M^2)*cos(QCS_w) / sqrt(1 - (M*cos(QCS_w))^2);
-FFw = 1 + Z_w*(t_c_w) + 100*(t_c_w)^4;
+Z_w = (2 - M^2)*cos(wing.sweep.QC) / sqrt(1 - (M*cos(wing.sweep.QC))^2);
+FFw = 1 + Z_w*(wing.thickness_over_chord) + 100*(wing.thickness_over_chord)^4;
 % Horizontal Tail
-Z_ht = (2 - M^2)*cos(QCS_ht) / sqrt(1 - (M*cos(QCS_ht))^2);
-FFht = 1 + Z_ht*(t_c_ht) + 100*(t_c_ht)^4;
+Z_ht = (2 - M^2)*cos(tail_h.sweep.QC) / sqrt(1 - (M*cos(tail_h.sweep.QC))^2);
+FFht = 1 + Z_ht*(tail_h.thickness_over_chord) + 100*(tail_h.thickness_over_chord)^4;
   
 % Vertical Tail
-Z_vt = (2 - M^2)*cos(QCS_vt) / sqrt(1 - (M*cos(QCS_vt))^2);
-FFvt = 1 + Z_vt*(t_c_vt) + 100*(t_c_vt)^4;
+Z_vt = (2 - M^2)*cos(tail_v.sweep.QC) / sqrt(1 - (M*cos(tail_v.sweep.QC))^2);
+FFvt = 1 + Z_vt*(tail_v.thickness_over_chord) + 100*(tail_v.thickness_over_chord)^4;
 % Nacelle
 FFn = 1 + 0.35 / (l_N / d_N);
 % Order is: fuselage, wings, h tail, v tail, nacelles
 FF = [FFf FFw FFht FFvt FFn];        % add in these for all the components
-% Interferance factors
+% Interference factors
 Qf = 1;          % The nacelles seem more than Dn away from the fuselage
 Qn = 1.3;        % Seems less than Dn away from wing
 Qw = 1;
@@ -100,16 +110,16 @@ Q = [Qf Qw Qht Qvt Qn];
 % Order is: fuselage, wings, h tail, v tail, nacelles
   
 % Fuselage
-Re_f = l_f * (V * p / mu);
+Re_f = fslg.len * (V * p / mu);
 C_f_f = 0.455 / ( log10(Re_f)^2.58);
 % Wings
-Re_w = ch_w * (V * p / mu);
+Re_w = wing.len.chord_mean * (V * p / mu);
 C_f_w = 0.455 / ( log10(Re_w)^2.58);
 % Horizontal Tail
-Re_ht = ch_ht * (V * p / mu);
+Re_ht = tail_h.len.chord_mean * (V * p / mu);
 C_f_ht = 0.455 / ( log10(Re_ht)^2.58);
 % Vertical Tail
-Re_vt = ch_vt * (V * p / mu);
+Re_vt = tail_v.len.chord_mean * (V * p / mu);
 C_f_vt = 0.455 / ( log10(Re_vt)^2.58);
 % Nacelles
 Re_n = l_N * (V * p / mu);
@@ -118,36 +128,37 @@ C_f = [C_f_f C_f_w C_f_ht C_f_vt C_f_n];
 % Wetted area of the different components
 % Order is: fuselage, wings, h tail, v tail, nacelles
 % Fuselage
-S_wet_f = pi * d_f * l_f * ( (1 - 2/lamf)^(2/3) ) * (1 + 1/lamf^2);
+fuselage.area_wetted = pi * fslg.diam * fslg.len * ( (1 - 2/lamf)^(2/3) ) * (1 + 1/lamf^2);
 % Wings
-S_wet_w = (S_w - c_r * d_f) * 2 * 1.02; %removing the area also covered by the fuselage
+wing.area.wet = (wing.area.wet - wing.len.chord_root * fslg.diam) * 2 * 1.02; %removing the area also covered by the fuselage
 % Horizontal tail
-S_wet_ht = S_ht * 2 * 1.02;
+tail_h.area_wetted = tail_h.area_ref * 2 * 1.02;
 % Vertical tail
-S_wet_vt = S_vt * 2 * 1.02;
+tail_v.area_wetted = tail_v.area_ref * 2 * 1.02;
 % Nacelles 
-S_wet_n = pi * d_N * l_N;
-S_wet = [S_wet_f S_wet_w S_wet_ht S_wet_vt S_wet_n];
+nacelle.area_wetted = pi * d_N * l_N;
+S_wet = [fuselage.area_wetted wing.area.wet tail_h.area_wetted tail_v.area_wetted nacelle.area_wetted];
 % component build up
-C_D0 = sum(FF .* Q .* C_f .* S_wet, 'all') / S_ref;
+C_D0 = sum(FF .* Q .* C_f .* S_wet, 'all') / wing.area.ref;
 %Add misc drag
 C_D0_misc = 0.1 * C_D0; %estimation from drag pred pg 25
 C_D0 = C_D0 + C_D0_misc; %add the misc values in
 % Calculate M_DD
-SWP = QCS_w;  % assuming that the sweep angle given in the eqn is quarter chord sweep for the wing
+SWP = wing.sweep.QC;  % assuming that the sweep angle given in the eqn is quarter chord sweep for the wing
 % Cdwake
 %%%%%%%%%%ASSUMED t/c OF THE WING%%%%%%%%%%%%%%%%%%%%
-C_L_des = W / (0.5 * p * V^2 * S_w);
-M_DD = KA/cos(SWP) - t_c_w/(cos(SWP)^2) - C_L_des / (10 * (cos(SWP)^3));
+C_L_des = W / (0.5 * p * V^2 * wing.area.wet);
+M_DD = KA/cos(SWP) - wing.thickness_over_chord/(cos(SWP)^2) - C_L_des / (10 * (cos(SWP)^3));
 M_crit = M_DD - 0.08;
 % c_dc has something to do with speed in mach
 K_sub = 1 / (pi * AR * e);
 %%%%%%%%%%ASSUMED LES OF THE WING%%%%%%%%%%%%%%%%%%%%
-K_sup = AR * (M^2 - 1) * cos(LES_w) / (4 * AR * sqrt(M^2 - 1) - 2);
+K_sup = AR * (M^2 - 1) * cos(wing.sweep.LE) / (4 * AR * sqrt(M^2 - 1) - 2);
 C_Di = K_sub * (C_L.^2);
 C_Di_noVortex = K_sub * (C_L_noVortex.^2);
 C_D = C_D0 + C_Di;
 C_D_noVortex = C_D0 + C_Di_noVortex;
+
 %% Part 3: Supersonic Effects and Cruise Efficiency
 % Iteration Variables
 Machs = linspace(0, 2.5, 53);
@@ -159,17 +170,17 @@ for i = 1:length(Machs)
     % ---- Required CL at this Mach for level flight ----
     V_M = M * a;                         % ft/s (since you fixed a)
     q_M = 0.5 * p * V_M^2;               % consistent with slug/ft^3 and ft/s
-    C_L_M = W / (q_M * S_w);
+    C_L_M = W / (q_M * wing.area.wet);
     K_sub_thresh = 1 / (pi * AR * e);
     Msq_minus_1 = max(M^2 - 1, 1e-9);
     Msqpk_minus_1 = max(M_DW_peak^2 - 1, 1e-9);
-    K_sup_thresh = AR * Msqpk_minus_1 * cos(LES_w) / (4 * AR * sqrt(Msqpk_minus_1) - 2);
+    K_sup_thresh = AR * Msqpk_minus_1 * cos(wing.sweep.LE) / (4 * AR * sqrt(Msqpk_minus_1) - 2);
     % ---- Wake drag + K in regions ----
     if (M >= M_crit)
         if (M >= M_DW_peak)
             %% Supersonic Region (decay; continuous at M_DW_peak)
             C_D_wake = C_DW_peak * sqrt(Msqpk_minus_1) / sqrt(Msq_minus_1);
-            K = AR * Msq_minus_1 * cos(LES_w) / (4 * AR * sqrt(Msq_minus_1) - 2);
+            K = AR * Msq_minus_1 * cos(wing.sweep.LE) / (4 * AR * sqrt(Msq_minus_1) - 2);
         else
             %% Transonic Region (Gundlach cubic ramp to the peak)
             scal = C_DW_peak/(M_DW_peak - M_crit)^3;
@@ -256,7 +267,7 @@ xlabel("CD")
 ylabel("CL")
 grid on;
 %% Additional graphs
-CD0_components = (FF .* Q .* C_f .* S_wet) / S_ref;
+CD0_components = (FF .* Q .* C_f .* S_wet) / wing.area.ref;
 labels = {'Fuselage','Wing','H Tail','V Tail','Nacelles'};
 figure;
 bar(CD0_components)
