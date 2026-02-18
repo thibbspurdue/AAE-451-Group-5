@@ -12,45 +12,32 @@ end
 %% Variable Definition
 aircraft = 'Sunfish';
 
-%Aircraft
-fields_lengths = {'c_bar', 'c_r','c_ht', 'c_vt', 'b_w', 'l_t', 'l_f', 'd_f', 'l_N', 'd_N'};
-u_lengths = u.m * ones(length(fields_lengths),1);
+% Pulling parameters
+T = readtable('Parameters_copy.xlsx','sheet',aircraft,'Range','1:2');
+T2 = readtable('Parameters_copy.xlsx','Sheet','Airfoil','Range','1:2');
+Tsum = [T(1,:) T2(1,:)];
+fields = Tsum.Properties.VariableNames;
 
-fields_areas = {'S_w', 'S_t','S_v', 'S'};
-u_areas = u.m^2 * ones(length(fields_areas),1);
+% Pulling units
+unitT = [readcell('Parameters_copy.xlsx','sheet',aircraft,'Range','3:3') readcell('Parameters_copy.xlsx','Sheet','Airfoil','Range','3:3')];
+unitMap = dictionary(...
+    "m",   u.m, ... % length
+    "m2",  u.m^2, ... % area  
+    "r",   u.rad, ...   % angle
+    "kg",  u.kg, ...    % mass/weight?
+    "i",   1/u.rad, ... % inverse angle
+    "u", 1);    % unitless
+units = unitMap(string(unitT));
 
-fields_angles = {'Swp_w', 'Swp_ht', 'Swp_vt', 'a_s'};
-u_rad = u.rad * ones(length(fields_angles),1);
+% Concatonating & assigning variables
+data = vpa(table2array(Tsum)) .* units;
+x = cell2struct(num2cell(data), fields,2);
 
-    %nondimensional
-fields_nondim = {'AR','AR_ht', 'AR_vt','e_t','C_L_0','C_L_0_t', 'C_M_0','x_ac', 'n_h','C_L_max', 'C_L_rot', 'C_L_t_NU', 'C_M_RRo','SM', 'Qf', 'Qw', 'Qht', 'Qvt', 'Qn', 'E'};
-u_nd = ones(length(fields_nondim),1);
-
-    %1/rad
-fields_airfoil_inv_rads = {'C_L_a', 'C_L_d', 'C_M_a', 'C_M_d','C_L_a_t', 'C_M_a_t'};
-u_inv_rad = (1/u.rad) * ones(length(fields_airfoil_inv_rads),1);
-
-fields_weights = {'W'};
-u_w = u.kg * ones(length(fields_weights),1);
-%append all into one
-fields = [fields_lengths, fields_areas, fields_angles, fields_nondim, fields_airfoil_inv_rads, ...
-          fields_weights];
-
-units = [u_lengths; u_areas; u_rad; u_nd; u_inv_rad; u_w];
-
-%deal with reading in the multiple sheets later
-T = readtable('Parameters_copy.xlsx','Sheet',aircraft);
-data = vpa(table2array(T)) .* units;
-x = cell2struct(num2cell(data), fields, 2);
-
-
-% % Now you access them via x.AR, x.c_bar, etc.
-fieldNames = fieldnames(x);
-
-for i = 1:numel(fieldNames)
-    assignin('base', fieldNames{i}, x.(fieldNames{i}));
+for i = 1:numel(fields)
+    assignin('base', fields{i}, x.(fields{i}));
 end
 
+clear T T2 Tsum x data i unitT units unitMap fields
 %% Currently Overriding the Static Margin given in the sheet
 SM = 0;
 
@@ -73,7 +60,7 @@ n = 100; %number of points
 
 
     %x var is x_cg/c_bar
-x_cg_c_bar = linspace(0.1, 0.6, n);
+x_cg_c_bar = linspace(0.1, 0.6, n) ./ u.m;
 x_cg = x_cg_c_bar * c_bar;
 
 
@@ -91,7 +78,7 @@ de_da = 2 * C_L_a / pi / AR;
 
 
 %Forward Limit (Stability)
-St_S_FL = (x_cg - x_ac + SM) ./ ( n_h * (1 - de_da) * l_t ./ c_Bar - (x_cg - x_ac + SM));
+St_S_FL = (x_cg - x_ac + SM) ./ ( n_h * (1 - de_da) * l_t ./ c_bar - (x_cg - x_ac + SM));
 
 %Stall Recovery
 St_S_SR = (C_M_0 + C_L_max * (x_cg - x_ac) - C_M_RR) ./ (C_L_t_ND * n_h * (l_t / c_bar - x_cg + x_ac));
@@ -101,10 +88,10 @@ St_S_TR = (C_M_0 + C_L_rot * (x_cg - x_ac) - C_M_RRo) ./ (C_L_t_NU * n_h * (l_t 
 
 %Graphing section, Scissor Plot
 figure;
-plot(x_cg_c_bar, vpa(St_S_FL), 'k');
+plot(separateUnits(x_cg_c_bar), vpa(St_S_FL), 'k');
 hold on; grid on;
-plot(x_cg_c_bar, St_S_SR, '-.k');
-plot(x_cg_c_bar, St_S_TR, '--k');
+plot(separateUnits(x_cg_c_bar), St_S_SR, '-.k');
+plot(separateUnits(x_cg_c_bar), St_S_TR, '--k');
 %yline(S_t/S, '--b')
 legend("Forward Limit (Stability)", "Aft Limit (Stall Recovery Control", "Forward Limit (Nose-up Control", "Selected S_t/S")
 xlabel('x_{cg}/c (Center of Gravity Position)')
@@ -154,8 +141,8 @@ if(e_t == 0) %using the horizontal tail only, someone else can change from here 
 end
 K_t = 1 / (pi * e_t * AR_ht);
 
-C_D_clean = C_D_0 + K * C_L_wing.^2 + K_t * (S_t / S) * C_L_tail_clean.^2;
-C_D_trimmed = C_D_0 + K * C_L_wing.^2 + K_t * (S_t / S) * C_L_tail_clean.^2;
+C_D_clean = C_D0 + K * C_L_wing.^2 + K_t * (S_t / S) * C_L_tail_clean.^2;%C_D_0 + K * C_L_wing.^2 + K_t * (S_t / S) * C_L_tail_clean.^2; % IF THIS IS REFERRING TO DIFFERENT C_D_0, PLEASE REVERT THIS CHANGE
+C_D_trimmed = C_D0 + K * C_L_wing.^2 + K_t * (S_t / S) * C_L_tail_clean.^2;% C_D_0 + K * C_L_wing.^2 + K_t * (S_t / S) * C_L_tail_clean.^2;
 
 figure;
 plot(C_L_trim, C_D_clean);
