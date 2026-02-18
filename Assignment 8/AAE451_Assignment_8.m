@@ -13,7 +13,7 @@ end
 aircraft = 'Sunfish';
 
 %Aircraft
-fields_lengths = {'c_bar', 'c_r','c_ht', 'c_vt', 'b_w', 'l_t','l_v', 'l_f', 'd_f', 'l_N', 'd_N'};
+fields_lengths = {'c_bar', 'c_r','c_ht', 'c_vt', 'b_w', 'l_t', 'l_f', 'd_f', 'l_N', 'd_N'};
 u_lengths = u.m * ones(length(fields_lengths),1);
 
 fields_areas = {'S_w', 'S_t','S_v', 'S'};
@@ -127,7 +127,6 @@ C_M_de = C_L_t_de * (S_t / S_w) * (x_cg - x_ac) - C_L_de_t * V_h;
 %Slide 22, less semi-nonsense
 a_trim = (C_M_0 * C_L_de + C_M_de .* (C_L_trim - C_L_0)) ./ (C_L_a * C_M_de - C_L_de * C_M_a);
 de_trim = - (C_M_0 * C_L_a + C_M_a * (C_L_trim - C_L_0)) ./ (C_L_a * C_M_de - C_L_de * C_M_a);
-
 
 %Graph Output
 figure;
