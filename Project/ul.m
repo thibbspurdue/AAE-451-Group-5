@@ -4,8 +4,7 @@ function output = ul(input)
 % attached.
 % 
 % https://www.mathworks.com/help/symbolic/units-list.html#mw_6567b974-b766-4942-bf6d-d787c12778e3
-    [~, unitList] = separateUnits(input);
-    if unitList.size > 0
+    if ~isa(input, 'sym')
         output = input;
     else
         output = double(separateUnits(simplify(unitConvert(input, 'SI', 'Derived'))));
