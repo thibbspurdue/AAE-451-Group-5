@@ -2,45 +2,53 @@
 % Assignment 4
 
 %% Variable definitions
+
+%% Aircraft Dependent Parameters
 % Weight and Geometry
-W = 66000;                % Weight, lb
-KA = 0.95;                % Supercritical airfoild number thing slide 10
-AR = 4;                   % Aspect Ratio
-d_f = 2.165*3.2808399;    % Fuselage diameter, converted from m to ft
-l_f = 60.299;             % Fuselage length (ft) from excel --> 18.379 m
-b = 44.9;                 % wingspan (ft)
-S_ref = 500;              % not super sure if this is S or not
+W = 94000;                  % Weight, From Assignment 3
+AR = 4;                     % Aspect Ratio
+
+%% Fixed Parameters
+KA = 0.95;                  % Supercritical airfoild number thing slide 10
+d_f = 2.165*3.2808399;      % Fuselage diameter, converted from m to ft
+l_f = 60.299;               % Fuselage length (ft) from excel --> 18.379 m
+b = 44.9;                   % wingspan (ft)
+S_ref = 500;                % not super sure if this is S or not
   
 % Wing Geometry
-t_c_w = 0.04;             % thickness over chord wing (dimensionless)
-MCS_w = 19.52 * (pi/180); % Mid chord sweep (deg)
-QCS_w = 25 * (pi/180);    % Quarter chord sweep (deg)
-LES_w = 30 * (pi/180);    % Leading edge sweep (deg)
-c_r = 4.611 * 3.2808399;  % the root chord
+t_c_w = 0.04;               % thickness over chord wing (dimensionless)
+MCS_w = 19.52 * (pi/180);   % Mid chord sweep (deg)
+QCS_w = 25 * (pi/180);      % Quarter chord sweep (deg)
+LES_w = 30 * (pi/180);      % Leading edge sweep (deg)
+c_r = 4.611 * 3.2808399;    % the root chord
 c_t = 1.5 * 3.2808399;
 ch_w = (c_r + c_t)/2;
-%ch_w = 15.0369;           % Chord length of the wing (ft) --> 4.58325 m
-S = 500;                  % Wing reference area, ft^2
-S_w = S;                  % Wing area, ft^2, (should subtract fuselage overlap)
+%ch_w = 15.0369;            % Chord length of the wing (ft) --> 4.58325 m
+S = 500;                    % Wing reference area, ft^2
+S_w = S;                    % Wing area, ft^2, (should subtract fuselage overlap)
+
 % Horizontal Tail Geometry
-t_c_ht = .04;             % thickness over chord (dimensionless)
+t_c_ht = .04;               % thickness over chord (dimensionless)
 MCS_ht = 31.943 * (pi/180);          % Mid chord sweep (deg)
 QCS_ht = 48.28571 * (pi/180);        % Quarter chord sweep (deg)
 LES_ht = 53.12 * (pi/180);           % Leading edge sweep (deg)
-ch_ht = 9.18635;          % Chord length of the horizontal tail (ft) --> 2.8 m
+ch_ht = 9.18635;            % Chord length of the horizontal tail (ft) --> 2.8 m
+
 % Vertical Tail Geometry
 t_c_vt = .04;             % thickness over chord (dimensionless)
 MCS_vt = 36.3239 * (pi/180);         % Mid chord sweep (deg)
 QCS_vt = 42.52679 * (pi/180);        % Quarter chord sweep (deg)
 LES_vt = 47.69 * (pi/180);           % Leading edge sweep (deg)
 ch_vt = 10.3937;          % Chord length of the vertical tail (ft) --> 3.168 m
-%% NEED S_HT AND S_VT%%%%%%%%%%%%
+
+
 S_ht = (2 * 3.56067 * 0.5 * (4.10919 + 1.112)) * 10.7639; % 10.7639 is m2 to ft2 conversion
 S_vt = (2 * 3.7 * 0.5 * (4.51 + 1.82)) * 10.7639;
-%% NEED S_HT AND S_VT%%%%%%%%%%%%
+
 % Nacelle Geometry
 l_N = 29.9367;            % Nacelle length (ft) --> 8.2103 m
 d_N = 3.02057;            % Nacelle diameter (ft) --> .92067 m
+
 %Flight conditions
 %V = 516;                  % flight velocity (from Assignment 3, not sure units)
 h = 40000;                % altitude (FEET)
@@ -48,15 +56,19 @@ p = 5.87*10^-4;           % air density (Slugs/ft^3)
 a = 659.8 * 1.4667;                % speed of sound (mph --> ft / s)
 M = 0.9;
 V = M * a;
+
 %q = 100691.89;            % dynamic pressure (Pa)
 mu = 2.969*10^-7;         % kinematic viscosity (slug/(ft s))
+
 % Wake Drag Conditions
 C_DW_peak = .058;         % peak CDW
 M_DW_peak = 1.25;         % Mach at peak CDW
+
 %% Part 0.5 
 % Oswald effciency factor
 %e = 0.98 * (1 - (d_f/b)^2); 
 e = 4.61 * (1 - 0.045*AR^0.68) * (cos(LES_w)^0.15) - 3.1;
+
 %% Part 1: Subsonic Analysis & Vortex Lift
 %AoA = linspace(-5, 30, 251);
 AoA = linspace(-pi/12, pi/3, 251);
@@ -66,17 +78,20 @@ C_Lp = Kp * sin(AoA).*(cos(AoA).^2);
 C_Lv = Kv * (sin(AoA).^2).*cos(AoA);
 C_L = C_Lp + C_Lv;
 C_L_noVortex = C_Lp;
-%disp("Lift Coefficient")
-%disp(C_L)
+
+
 %% Part 2: Parasitic Drag Estimation
-%M = V/a; % We are using the mach of the flight conditions given
-%Form Factor
+% M = V/a; % We are using the mach of the flight conditions given
+% Form Factor
+
 % Fuselage
 lamf = l_f/d_f;                             % fineness ratio for fuselage
 FFf = 0.9 + 5 / (lamf^(1.5)) + lamf / 400;  % Raymer 6th ed
+
 % Wings
 Z_w = (2 - M^2)*cos(QCS_w) / sqrt(1 - (M*cos(QCS_w))^2);
 FFw = 1 + Z_w*(t_c_w) + 100*(t_c_w)^4;
+
 % Horizontal Tail
 Z_ht = (2 - M^2)*cos(QCS_ht) / sqrt(1 - (M*cos(QCS_ht))^2);
 FFht = 1 + Z_ht*(t_c_ht) + 100*(t_c_ht)^4;
@@ -84,10 +99,13 @@ FFht = 1 + Z_ht*(t_c_ht) + 100*(t_c_ht)^4;
 % Vertical Tail
 Z_vt = (2 - M^2)*cos(QCS_vt) / sqrt(1 - (M*cos(QCS_vt))^2);
 FFvt = 1 + Z_vt*(t_c_vt) + 100*(t_c_vt)^4;
+
 % Nacelle
 FFn = 1 + 0.35 / (l_N / d_N);
+
 % Order is: fuselage, wings, h tail, v tail, nacelles
 FF = [FFf FFw FFht FFvt FFn];        % add in these for all the components
+
 % Interferance factors
 Qf = 1;          % The nacelles seem more than Dn away from the fuselage
 Qn = 1.3;        % Seems less than Dn away from wing
@@ -95,6 +113,7 @@ Qw = 1;
 Qvt = 1.03;      % Seems both V and conventional
 Qht = 1.08;      % Horizontal stabilizer separate component
 Q = [Qf Qw Qht Qvt Qn];
+
 % Skin friction factors
 % Order is: fuselage, wings, h tail, v tail, nacelles
   
@@ -114,6 +133,7 @@ C_f_vt = 0.455 / ( log10(Re_vt)^2.58);
 Re_n = l_N * (V * p / mu);
 C_f_n = 0.455 / ( log10(Re_n)^2.58);
 C_f = [C_f_f C_f_w C_f_ht C_f_vt C_f_n];
+
 % Wetted area of the different components
 % Order is: fuselage, wings, h tail, v tail, nacelles
 % Fuselage
@@ -147,6 +167,7 @@ C_Di = K_sub * (C_L.^2);
 C_Di_noVortex = K_sub * (C_L_noVortex.^2);
 C_D = C_D0 + C_Di;
 C_D_noVortex = C_D0 + C_Di_noVortex;
+
 %% Part 3: Supersonic Effects and Cruise Efficiency
 % Iteration Variables
 Machs = linspace(0, 2.5, 53);
@@ -215,25 +236,6 @@ xlabel('Mach');
 ylabel('Mach × (L/D)_{max}');
 title('Cruise Efficiency Index vs Mach');
 grid on;
-% %debugging plot
-% LDMax1 = 1./sqrt(C_D_ZL + Ks);
-% LDMax2 = 1./sqrt(C_D0 + Ks);
-% LDMax3 = 1./sqrt(4.*C_D_ZL.*Ks);
-% LDMax4 = 1./sqrt(4.*C_D0.*Ks);
-% figure;
-% plot(Machs, LDMax1); hold on; 
-% plot(Machs, LDMax2);
-% plot(Machs, LDMax3);
-% plot(Machs, LDMax4);
-% legend('1./sqrt(C_D_ZL + Ks)', '1./sqrt(C_D0 + Ks)', '1./sqrt(4*C_D_ZL*Ks)', '1./sqrt(4*C_D0*Ks)')
-% title("Variations of the ldmax equation")
-% figure;
-% plot(Machs,  Machs.*LDMax1); hold on; 
-% plot(Machs,  Machs.*LDMax2);
-% plot(Machs,  Machs.*LDMax3);
-% plot(Machs,  Machs.*LDMax4);
-% legend('1./sqrt(C_D_ZL + Ks)', '1./sqrt(C_D0 + Ks)', '1./sqrt(4*C_D_ZL*Ks)', '1./sqrt(4*C_D0*Ks)')
-% title("Efficency")
 %CL vs Alpha
 figure;
 plot(AoA*180/pi, C_L_noVortex); 
@@ -269,3 +271,5 @@ xlabel('Mach Number');
 ylabel('Induced Drag Factor, K');
 title('Induced Drag Factor as a Function of Mach Number');
 grid on;
+
+disp()
