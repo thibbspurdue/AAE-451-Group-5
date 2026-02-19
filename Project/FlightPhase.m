@@ -47,16 +47,16 @@ classdef FlightPhase
                 options.?FlightPhase
             end
 
-            if nargin == 1
+            if nargin == 0
                 return
             end
 
             if has_units(altitude)
-                obj.altitude = ul(unitConvert(altitude, obj.tempunits.m));
-            else
-                obj.altitude = altitude;
+                altitude = ul(unitConvert(altitude, obj.tempunits.m));
             end
+            obj.altitude = altitude;
             [~, obj.sonic_speed, ~, obj.air_density] = atmosisa(obj.altitude);
+            obj.load_factor = load_factor;
 
             assert(isfield(options, "velocity") || isfield(options, "mach_number"), "Airspeed is required. Please supply Mach # or velocity.")
             if isfield(options, "mach_number") % Default to Mach number definition
@@ -64,30 +64,25 @@ classdef FlightPhase
                 obj.velocity = obj.mach_number * obj.sonic_speed;
             else
                 if has_units(options.velocity)
-                    obj.velocity = ul(unitConvert(options.velocity, obj.tempunits.m / obj.tempunits.s));
-                else
-                    obj.velocity = options.velocity;
+                    options.velocity = ul(options.velocity);
                 end
+                obj.velocity = options.velocity;
                 obj.mach_number = obj.velocity / obj.sonic_speed;
             end
-
-            obj.load_factor = load_factor;
 
             % Cannot simply set(obj, options) since additional validation is
             % applied to name-value arguments
             if isfield(options, "dv_dt")
                 if has_units(options.dv_dt)
-                    obj.dv_dt = ul(unitConvert(options.dv_dt, obj.tempunits.m / obj.tempunits.s^2));
-                else
-                    obj.dv_dt = options.dv_dt;
+                    options.dv_dt = ul(unitConvert(options.dv_dt, obj.tempunits.m / obj.tempunits.s^2));
                 end
+                obj.dv_dt = options.dv_dt;
             end
             if isfield(options, "dh_dt")
                 if has_units(options.dh_dt)
-                    obj.dv_dt = ul(unitConvert(options.dh_dt, obj.tempunits.m / obj.tempunits.s));
-                else
-                    obj.dv_dt = options.dh_dt;
+                    options.dh_dt = ul(unitConvert(options.dh_dt, obj.tempunits.m / obj.tempunits.s));
                 end
+                obj.dh_dt = options.dh_dt;
             end
             
             % There has to be a better way to do this but I can't be
