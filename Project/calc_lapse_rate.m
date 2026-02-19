@@ -14,6 +14,11 @@ function alpha = calc_lapse_rate(altitude, mach_number, throttle_ratio, engine_c
         engine_configuration {mustBeInteger, mustBeInRange(engine_configuration, 1, 6)}
     end
 
+    tempunits = symunit;
+    if has_units(altitude)
+        altitude = ul(unitConvert(altitude, tempunits.m));
+    end
+
     assert(length(altitude) == length(mach_number), 'Invalid altitude/Mach number inputs')
 
     % Convert possibly scalar inputs into arrays

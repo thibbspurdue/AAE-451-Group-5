@@ -6,8 +6,7 @@
 %% Initialisation
 
 % Unit setup
-u = symunit; % Initialise symbolic units object
-g = 9.81; % m*s^-2
+Assignment_6
 
 wing_loading_range = ul(unitConvert([40 140] * u.lbf / (u.ft^2), u.N / (u.m^2)));
 fprintf("Wing loading range: %d - %d Pa\n", wing_loading_range);
@@ -30,7 +29,7 @@ K_takeoff = 1.1; % from slide 19 and Mattingly p.34
 
 % Carrier landing, RFP 3.2.2
 v_approach = 140 * u.kts + 0 * u.kts; % typical V_eng from Mattingly p.34, RFP limits approach < 145kn. Should calculate better minimum approach speed from stall margin(?)
-C_L_max = 2; % assignment 4 needs to be fixed, temporarily borrwing value from Mattingly p.43
+C_L_max = 1.5; % assignment 4 needs to be fixed, temporarily borrowing value from Mattingly p.43
 
 % Carrier takeoff, RFP 3.2.1
 v_takeoff = 120 * u.kts + 0 * u.kts; % 20 kn WoD from slide 19, 0kn from RFP
@@ -56,7 +55,6 @@ max_loading_approach = p_approach.wing_loading(C_L_max, K_approach);
 % Task A-2: Takeoff Constraint
 p_takeoff = FlightPhase(0, beta_takeoff, "Low-bypass turbofan, wet thrust", velocity=v_takeoff, dv_dt=min_accel);
 max_loading_takeoff = p_takeoff.wing_loading(C_L_max, K_takeoff);
-
 
 % Hardcoded C_D0 and K values from assignment 4, to be refactored/corrected later
 %%% 4B: Performance Limits
@@ -92,8 +90,8 @@ plot(wing_loading_range, twr_turn(2,:))
 plot(wing_loading_range, twr_turn(3,:))
 plot(wing_loading_range, twr_seroc)
 
-xline(max_loading_takeoff);
-xline(max_loading_approach)
+xline(max_loading_takeoff, 'Color', 'r');
+xline(max_loading_approach, 'Color', 'g')
 
 legend("supersonic", "subsonic", "turn1", "turn2", "turn3", "SEROC", "Take-Off Limit", "Landing Limit")
 hold off
