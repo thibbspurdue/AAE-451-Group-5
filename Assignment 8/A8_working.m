@@ -1,5 +1,22 @@
 %% AAE 451 Team 5 Assignment 8 Trim Drag stuff
 
+%% Code layout
+% Aircraft specifications are declared in line 16~18
+%
+%
+% spreadsheet - refers to the name of the xlsx file
+%
+% aircraft - refers to the name of the aircraft we are conducting the test
+% for as well as the name of the sheet in the 'spreadsheet' variable; MAKE
+% SURE THAT THE TITLE OF THE SHEET AND AIRCRAFT ARE IDENTICAL, MATLAB is
+% case sensitive
+%
+% airfoil - refers to the name of the airfoil we are using for the aircraft
+% as well as the name of the sheet in the 'spreadsheet' variable
+%
+% Required files: Parameters_copy.xlsx, Parameter_Import.m, Drag_Complex.m,
+% Parameters.rebalance.m
+
 %% Initialisation
 
 % Unit setup
@@ -11,7 +28,7 @@ end
 
 %% Variable Definition
 spreadsheet = 'Parameters_copy.xlsx';
-aircraft = 'Sunfish';
+aircraft = 'Grinch';
 airfoil = 'Airfoil';
 
 Parameter_Import(spreadsheet, aircraft, airfoil);
@@ -30,16 +47,16 @@ C_D0 = Drag_Complex(Q, l_f, d_f, l_N, d_N, QCS_w, QCS_ht, QCS_vt, t_c_w, t_c_ht,
 V_h = S_h * l_h / S_w / c_bar;
 
 %% 2.b  Scissor Plot
-n = 100; %number of points
+n = 100; % number of points
 
     %x var is x_cg/c_bar
-x_cg_c_bar = linspace(-1, 1, n); %linspace(0.1, 0.6, n);
-x_cg = x_cg_c_bar ; % * c_bar; Be concerned with x_cg def later, unitless here
+x_cg_c_bar = linspace(-1, 1, n);
+x_cg = x_cg_c_bar ;
 x_ac = x_ac / c_bar;
 
     %derived variables
-C_L_t_ND = C_L_a_t * a_s; %Coefficent of lift for the tail if nose down
-C_M_RR = -C_L_max * SM + C_M_0; %Coefficent of moment for required recovery
+C_L_t_ND = C_L_a_t * a_s;       % Coefficent of lift for the tail if nose down
+C_M_RR = -C_L_max * SM + C_M_0; % Coefficent of moment for required recovery
 
 de_da = separateUnits(1.6 * C_L_a / pi / AR);
 
@@ -69,38 +86,44 @@ yline(double(S_t/S), '--b')
 
 ylim_radius = 0.3; ylim([(double(S_t/S) - ylim_radius) (double(S_t/S) + ylim_radius)])
 
-legend("Forward Limit (Stability)", "Aft Limit (Stall Recovery Control", "Forward Limit (Nose-up Control", "Selected S_t/S")
+x_cg_max_forward = find(vpa(St_S_FL) > double(S_t/S),1,'first');
+x_cg_max_aft = find(vpa(St_S_SR) > double(S_t/S),1,'first') - 1;
+x_cg_min = find(vpa(St_S_TR) < double(S_t/S),1,'first');
+
+line([x_cg(x_cg_min) x_cg(x_cg_max_forward)], [double(S_t/S) double(S_t/S)], 'LineWidth',1,'Color','r')
+cgMin = xline(x_cg(x_cg_min),':',{'Minimum cg trimmed',num2str(x_cg(x_cg_min))});
+cgMax = xline(x_cg(x_cg_max_forward), ':', {'Maximum cg trimmed',num2str(x_cg(x_cg_max_forward))});
+
+legend("Forward Limit (Stability)", "Aft Limit (Stall Recovery Control", "Forward Limit (Nose-up Control", "Selected S_t/S", "Center of gravity trimmed for forward limit",'','', 'Location','best')
 xlabel('x_{cg}/c (Center of Gravity Position)')
 ylabel('S_{t}/S (Horizontal tail Area Ratio)')
 title("Scissor Plot", aircraft)
-
-
-
 %% 2.c  Trim analysis
 %C_L_trim = 2 * W / p / S_w / V.^2; %this is the actual value
 C_L_trim = linspace(-1, 2, n);
 
-%x_cg = x_ac - SM + (C_L_a_t * (1 - de_da) * V_h) / (C_L_a + (S_t / S_w) * C_L_a_t * (1 - de_da));
 [~, i1] = min((St_S_FL - double(S_t/S)).^2);
 [~, i2] = min((St_S_TR - double(S_t/S)).^2);
 x_cg = 0.5 * (x_cg(i1) + x_cg(i2));
 
 C_M_a_t = -0.22 / u.rad;
-%Slide 23 semi-nonsense
+
+%Slide 23
 C_L_t_de = (C_L_a_t/pi) * (acos(1 - 2*E) + 2 * sqrt(E * (1 - E)));
-C_L_de_t = (C_M_a_t / pi) * (1 - E) * sqrt(2*E - 1); %under the assumption there is a typo in slide 23
+C_L_de_t = (C_M_a_t / pi) * (1 - E) * sqrt(2*E - 1);
 
 C_L_de = (S_t / S_w) * C_L_t_de;
 C_M_de = C_L_de_t * (S_t / S_w) * (x_cg - x_ac) - C_L_t_de * V_h;
 % C_L_de = (S_t / S_w) * C_L_de_t;
 % C_M_de = C_L_t_de * (S_t / S_w) * (x_cg - x_ac) - C_L_de_t * V_h;
 
-%Slide 22, less semi-nonsense
+%Slide 22
 a_trim = (C_M_0 * C_L_de + C_M_de .* (C_L_trim - C_L_0)) ./ (C_L_a * C_M_de - C_L_de * C_M_a);
 de_trim = - (C_M_0 * C_L_a + C_M_a * (C_L_trim - C_L_0)) ./ (C_L_a * C_M_de - C_L_de * C_M_a);
 
 %Graph Output
 figure;
+sgtitle(aircraft)
 subplot(2,1,1);
 plot(C_L_trim, separateUnits(a_trim) * 180 / pi);
 subtitle("Trim Angle of Attack vs Trim Lift Coefficent")
@@ -144,7 +167,7 @@ plot(C_L_trim, C_D_trimmed);
 legend("Clean", "Trimmed")
 ylabel("CD")
 xlabel("CL trim")
-title("Aircraft Drag Polar")
+title("Aircraft Drag Polar", aircraft)
 
 %% 2.d  geometry, vertical tail
 V_t = S_t * l_v / S_w / c_bar;

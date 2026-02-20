@@ -25,23 +25,28 @@ function [C_D0] = Drag_Complex(Q, l_f, d_f, l_N, d_N, QCS_w, QCS_ht, QCS_vt, t_c
 %S_ht: area of the horizontal tail
 %S_vt: area of the vertical tail
 
+u = symunit; % Initialise symbolic units object
 
 %% Global Constants
 % Set these to be the values used for the Assignment 8 trimming code
 M = 0.9;
-a = 294.9; %m/s
+a = 294.9 * u.m / u.s; %m/s
 V = M * a;
 
-p = 0.3023; %air density, kg/m^3
-mu = 1.4216e-05; %kinematic viscosity, kg/m/s
+p = 0.3023 * u.kg / (u.m^3); %air density, kg/m^3
+mu = 1.4216e-05 * u.kg / u.m / u.s; %kinematic viscosity, kg/m/s
 
 %% Part 2: Parasitic Drag Estimation
 %M = V/a; % We are using the mach of the flight conditions given
 %Form Factor
 % Fuselage
-lamf = l_f/d_f;                             % fineness ratio for fuselage
-
-FFf = 0.9 + 5 / (lamf^(1.5)) + lamf / 400;  % Raymer 6th ed
+if d_f == 0
+    lamf = 0;
+    FFf = 0;
+else
+    lamf = l_f/d_f;                             % fineness ratio for fuselage
+    FFf = 0.9 + 5 / (lamf^(1.5)) + lamf / 400;  % Raymer 6th ed
+end
 
 % Wings
 Z_w = (2 - M^2)*cos(QCS_w) / sqrt(1 - (M*cos(QCS_w))^2);
@@ -55,7 +60,11 @@ Z_vt = (2 - M^2)*cos(QCS_vt) / sqrt(1 - (M*cos(QCS_vt))^2);
 FFvt = 1 + Z_vt*(t_c_vt) + 100*(t_c_vt)^4;
 
 % Nacelle
-FFn = 1 + 0.35 / (l_N / d_N);
+if l_N == 0
+    FFn = 0;
+else
+    FFn = 1 + 0.35 / (l_N / d_N);
+end
 
 % Order is: fuselage, wings, h tail, v tail, nacelles
 FF = [FFf FFw FFht FFvt FFn];        % add in these for all the components
@@ -92,7 +101,11 @@ C_f = [C_f_f C_f_w C_f_ht C_f_vt C_f_n];
 % Wetted area of the different components
 % Order is: fuselage, wings, h tail, v tail, nacelles
 % Fuselage
-S_wet_f = pi * d_f * l_f * ( (1 - 2/lamf)^(2/3) ) * (1 + 1/lamf^2);
+if lamf == 0
+    S_wet_f = 0;
+else
+    S_wet_f = pi * d_f * l_f * ( (1 - 2/lamf)^(2/3) ) * (1 + 1/lamf^2);
+end
 % Wings
 S_wet_w = (S_w - c_r * d_f) * 2 * 1.02; %removing the area also covered by the fuselage
 % Horizontal tail
@@ -104,7 +117,5 @@ S_wet_n = pi * d_N * l_N;
 S_wet = [S_wet_f S_wet_w S_wet_ht S_wet_vt S_wet_n];
 
 % component build up
-C_D0 = sum(FF .* Q .* C_f .* S_wet, 'all') / S_ref;
-
+C_D0 = sum(simplify(FF .* Q .* C_f .* S_wet), 'all') / S_ref;
 end
-
