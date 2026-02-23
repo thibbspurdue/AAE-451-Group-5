@@ -1,7 +1,7 @@
 % AAE 451 Spring 2026
 % Assignment 6
 % Team 5
-% VERSION 1.1
+% VERSION 1.2
 
 % Variables
 % This section has all variables used in other Assignment Codes. Variables
@@ -18,6 +18,8 @@ ft_Mi = 5280;     % 1 Mile = 5280 feet
 Cruise_SFC = 0.80;         % lb/lbf * hr, currently from propulsion system choice
 Combat_SFC = 1.9;          % lb/lbf * hr, currently from propulsion system choice
 Loiter_SFC = 0.80;         % lb/lbf * hr, currently from propulsion system choice
+W_payload = 10000;         % 2500 lb avionics suite + 7500 lb engines
+W_crew = 215;              % lbs, Given in Assignment 3 Description
 Kvs = 1;                   % 1 for fixed wing sweep
 V_Cruise = 516 * ft_NM;    % Nicolai (136), Assumption that Cruise is 0.9 at alt 36000-45000
 Wing_loading = 90;         % lb/ft^2
@@ -40,8 +42,6 @@ LES_w = deg2rad(30);               % Wing leading edge sweep, rad
 c_r = 4.611;                       % Wing root chord, m
 c_t = 1.5;                         % Wingtip chord, ft -> m
 ch_w = (c_r + c_t)/2;              % Wing mean chord, ft -> m
-% OR
-% ch_w = 15.5;                     % Chord length of the wing (ft) --> 4.58325 m
 S = S_ref;                         % Wing reference area, ft^2
 S_w = S;                           % Wing area, ft^2, (should subtract fuselage overlap)
 % Horizontal Tail Geometry
@@ -61,10 +61,19 @@ S_vt = (2 * 3.7 * 0.5 * (4.51 + 1.82));
 % Nacelle Geometry
 l_N = 29.9367;                     % Nacelle length (ft) --> 8.2103 m
 d_N = 3.02057;                     % Nacelle diameter (ft) --> .92067 m
-beta = [1, .78, .6];               % Weight Fractions                      % From Assignment 4
+beta = [1, .78, .6];               % Weight Fractions From Assignment 4
 CD_w = .0190;                      % From Assignment 4
 C_L_max = 2.5;                     % From Chosen Airfoil
-K = .3005;                         % From Assignment 4
+%K = .3005;                         % From Assignment 4
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% L/D VALUES BELOW: These initial L/D values are based on historical data 
+% and must be assumed for the sizing code to work. Since Assignment 3 uses 
+% these values, and Assignment 4 (where the actual L/D values are 
+% calculated) depends on Assignment 3, this is a fundamental assumption 
+% that keeps us out of an infinite design loop.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 Cruise_L_D = 9.2;                  % Assignment 4
 Combat_L_D = 4.5;                  % Assignment 4
 Loiter_L_D = 11;                   % Assignment 4
@@ -74,6 +83,10 @@ Loiter_L_D = 11;                   % Assignment 4
 alpha = [.84, 1.28];               % Lapse Rate
 
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%% DO NOT CHANGE BELOW THIS LINE EXCEPT FOR EDITS LOG %%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 %% Aircraft Independent Variables
 
 % Assignment 3
@@ -81,8 +94,6 @@ alpha = [.84, 1.28];               % Lapse Rate
 b_takeoff = 1;      % Given in Assignment 3 Description
 b_combatturn = .78; % Given in Assignment 3 Description
 b_landing = 0.6;    % Given in Assignment 3 Description 
-W_payload = 10000;  % 2500 lb avionics suite + 7500 lb engines
-W_crew = 215;       % lbs, Given in Assignment 3 Description
 % Configuration: Carrier-based, Fixed Wing (or simple fold), Afterburning Turbofans.
 W1_W0 = 0.970;      % Given in Assignment 3 Description
 W2_W1 = 0.985;      % Given in Assignment 3 Description
@@ -231,8 +242,10 @@ mu = Atm.viscosity_dyn(altitude) * u.kg / u.m / u.s;
 e_oswald = 4.61 * (1 - 0.045 * wing.aspect_ratio^0.68) * (cos(wing.sweep.LE)^0.15) - 3.1; % Raymer eq. 12.49
 
 AoA = linspace(-pi/12, pi/3, 251);
-Kp = (2*pi*wing.aspect_ratio) / (2 + sqrt(wing.aspect_ratio^2 * (1 + tan(wing.sweep.MC)) + 4)); %% ASSUMING MCS_W %%
-Kv = pi * wing.aspect_ratio / 2 / cos(wing.sweep.LE); %% ASSUMING LES_W %%
+%% ASSUMING MCS_W %%
+Kp = (2*pi*wing.aspect_ratio) / (2 + sqrt(wing.aspect_ratio^2 * (1 + tan(wing.sweep.MC)) + 4)); 
+%% ASSUMING LES_W %%
+Kv = pi * wing.aspect_ratio / 2 / cos(wing.sweep.LE); 
 C_Lp = Kp * sin(AoA).*(cos(AoA).^2);
 C_Lv = Kv * (sin(AoA).^2).*cos(AoA);
 C_L = C_Lp + C_Lv;
@@ -260,19 +273,14 @@ nacelle.ff.interference = 1.3;      % Seems less than Dn away from wing
 Q = ul([fslg.ff.interference wing.ff.interference tail_h.ff.interference tail_v.ff.interference nacelle.ff.interference]);
 
 % Skin friction factors  
-%fslg.reynolds = fslg.len.length * (V * rho / mu);
 fslg.reynolds = separateUnits(fslg.len.length * (V * rho / mu));
 fslg.ff.skin = 0.455 / (log10(fslg.reynolds)^2.58);
-%wing.reynolds = wing.len.chord_mean * (V * rho / mu);
 wing.reynolds = separateUnits(wing.len.chord_mean * (V * rho / mu));
 wing.ff.skin = 0.455 / (log10(wing.reynolds)^2.58);
-%tail_h.reynolds = tail_h.len.chord_mean * (V * rho / mu);
 tail_h.reynolds = separateUnits(tail_h.len.chord_mean * (V * rho / mu));
 tail_h.ff.skin = 0.455 / ( log10(tail_h.reynolds)^2.58);
-%tail_v.reynolds = tail_v.len.chord_mean * (V * rho / mu);
 tail_v.reynolds = separateUnits(tail_v.len.chord_mean * (V * rho / mu));
 tail_v.ff.skin = 0.455 / ( log10(tail_v.reynolds)^2.58);
-%nacelle.reynolds = nacelle.len.length * (V * rho / mu);
 nacelle.reynolds = separateUnits(nacelle.len.length * (V * rho / mu));
 nacelle.ff.skin = 0.455 / ( log10(nacelle.reynolds)^2.58);
 C_f = ul([fslg.ff.skin wing.ff.skin tail_h.ff.skin tail_v.ff.skin nacelle.ff.skin]);
@@ -300,8 +308,8 @@ S_wet = [fslg.area.wet, wing.area.wet, tail_h.area.wet, tail_v.area.wet, nacelle
 % component build up
 C_D0 = sum((FF .* Q .* C_f .* S_wet), 'all')/wing.area.ref;
 %Add misc drag
-C_D0_misc = 0.1 * C_D0; % estimation from drag pred pg 25
-C_D0 = C_D0 + C_D0_misc; %add the misc values in
+C_D0_misc = 0.1 * C_D0;  % estimation from drag pred pg 25
+C_D0 = C_D0 + C_D0_misc; % add the misc values in
 % Calculate M_DD
 SWP = wing.sweep.QC;  % assuming that the sweep angle given in the eqn is quarter chord sweep for the wing
 
@@ -471,7 +479,7 @@ twr_supersonic = p_supersonic.twr(wing_loading_range, 0.0541, 0.3005);
 
 % Task B-2: Strike Dash, Mach 0.85 @ SL, dry thrust
 p_strike = FlightPhase(0, b_combatturn, "Low-bypass turbofan, dry thrust", mach_number=M_strike);
-twr_strike = p_strike.twr(wing_loading_range, 0.0195, 0.0955);
+twr_strike = p_strike.twr(wing_loading_range, C_D0, K);
 
 % Task B-3: Sustained Turn, 8 deg/s @ 20k ft, M0.7, 0.8, 0.9, wet thrust
 % Mattingly eq. 2.2.3
@@ -486,6 +494,17 @@ end
 % Task B-4: SEROC, 500 ft/min single-engine in approach config, wet thrust?
 p_seroc = FlightPhase(0, b_landing, "Low-bypass turbofan, wet thrust", velocity=v_approach, dh_dt=500*u.ft/u.min);
 twr_seroc = p_seroc.twr(wing_loading_range, 0.0195, 0.0955);
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% WHY ARE THESE CD0 AND K VALUES DIFFERENT/THE SAME?!?!?!??!??!??!?!??!???
+% example: twr = p.twr(wing_loading_range, CDO, K);
+%
+% twr_supersonic = p_supersonic.twr(wing_loading_range, 0.0541, 0.3005);
+% twr_strike = p_strike.twr(wing_loading_range, 0.0195, 0.0955);
+% twr_seroc = p_seroc.twr(wing_loading_range, 0.0195, 0.0955);
+
+% Numbers work for strike phase, fix for supersonic and SEROC
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 installedthrust = 43000*.97*2;
 
@@ -509,7 +528,12 @@ hold off
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Change Log:
-% 2/8/2026: Version 1.0 - Original Creation
-% 2/18/2026: Version 1.1 - Reworked Code, began working in chosen design
-%                          parameters from Assignment 7
+% 2/8/2026:     Version 1.0
+% Original Creation
+%
+% 2/16-18/2026: Version 1.1 
+% Reworked Code, began working in chosen design parameters from Assignment 7
+%
+% 2/23/2026:    Version 1.2
+% Checked Variables, noted important assumptions, formatted                   
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
