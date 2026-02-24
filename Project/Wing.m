@@ -86,6 +86,13 @@ classdef Wing < Component
             
             output = form_factor * obj.interference_factor * skin_friction_factor * obj.wetted_area / obj.reference_area;
         end
+
+        function drag_factor = calc_induced_drag_factor(obj, mach_number)
+            arguments
+                obj
+                mach_number 
+            end
+            
     end
 
     methods

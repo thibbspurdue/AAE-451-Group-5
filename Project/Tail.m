@@ -111,4 +111,3 @@ classdef Tail < Component
         end
     end
 end
-
