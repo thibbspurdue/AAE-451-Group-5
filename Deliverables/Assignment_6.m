@@ -22,11 +22,15 @@ W_payload = 10000;         % 2500 lb avionics suite + 7500 lb engines
 W_crew = 215;              % lbs, Given in Assignment 3 Description
 Kvs = 1;                   % 1 for fixed wing sweep
 V_Cruise = 516 * ft_NM;    % Nicolai (136), Assumption that Cruise is 0.9 at alt 36000-45000
+V_Sup = 918*ft_NM;         % Supersonic is 1.6
 Wing_loading = 90;         % lb/ft^2
 Thrust_Weight = 1.15;      % Chosen Design Parameter
 
 % Assignment 4
 
+h_cruise_sup = 40000;       % altitude (FEET)
+h_Seroc_Strike_dash = 100;  % altitude (FEET) at SL
+M = 0.9;                    % Assumed cruise speed, 
 % Chosen Design Parameters
 AR = 2.215;                % Aspect Ratio (chosen)
 dia_fuselage = 2.165;      % Fuselage diameter (m)
@@ -64,7 +68,6 @@ d_N = 3.02057;                     % Nacelle diameter (ft) --> .92067 m
 beta = [1, .78, .6];               % Weight Fractions From Assignment 4
 CD_w = .0190;                      % From Assignment 4
 C_L_max = 2.5;                     % From Chosen Airfoil
-%K = .3005;                         % From Assignment 4
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % L/D VALUES BELOW: These initial L/D values are based on historical data 
@@ -115,9 +118,6 @@ C5 = 0.08;          % Given in Assignment 3
 % Assignment 4
 
 K_A = 0.95;               % From Slide 10 of Drag Polar Notes
-h = 40000;                % altitude (FEET), from ISA tables
-M = 0.8;                  % Assumed cruise speed, 
-q = 100691.89;            % dynamic pressure (Pa), from ISA tables
 C_DW_peak = .058;         % peak CDW, Assumed Wake Drag Conditions
 M_DW_peak = 1.25;         % Mach at peak CDW, Assumed Wake Drag Conditions
 Qf = 1;                   % From Raymer ch 12
@@ -136,8 +136,8 @@ K_takeoff = 1.1;          % from slide 19 and Mattingly p.34
 % Initial Cruise
 R = Cruise_Out * ft_NM;
 C = Cruise_SFC;
-V = V_Cruise;
-W3_W2 = exp(-R*C/(V*Cruise_L_D));
+V_cruise = V_Cruise;
+W3_W2 = exp(-R*C/(V_cruise*Cruise_L_D));
 
 %Combat
 E = Combat_Time / 60;
@@ -147,8 +147,8 @@ W4_W3 = exp(-E*C / Combat_L_D);
 %Final Cruise
 R = Cruise_Back * ft_NM;
 C = Cruise_SFC;
-V = V_Cruise;
-W5_W4 = exp(-R*C/(V*Cruise_L_D));
+V_cruise = V_Cruise;
+W5_W4 = exp(-R*C/(V_cruise*Cruise_L_D));
     
 %Loiter
 E = Loiter_Time / 60;
@@ -200,6 +200,8 @@ for i = 1:length(components_structs)
     eval([components_structs{i} '.ff = struct();']);
 end
 
+% Moving Variables around
+
 %fuselage = Fuselage();
 fslg.len.diam = dia_fuselage * u.m;
 fslg.len.length = len_fuselage * u.m;
@@ -230,61 +232,85 @@ tail_v.sweep.MC = deg2rad(MCS_vt);
 nacelle.len.length = unitConvert(l_N * u.ft, u.m);
 nacelle.len.diameter = unitConvert(d_N * u.ft, u.m);
 components = {fslg, wing, tail_h, tail_v, nacelle};
-altitude = h * u.ft;
+altitude_cruise_sup = h_cruise_sup * u.ft;
+altitude_SL = h_Seroc_Strike_dash * u.ft;
 
-t = Atm.temp(altitude);
-rho = Atm.density(altitude) * u.kg / u.m^3;
-a = Atm.sonic_speed(altitude) * u.m / u.s;
-mu = Atm.viscosity_dyn(altitude) * u.kg / u.m / u.s;
+% Getting ISA Values for mission parts
+
+t = Atm.temp(altitude_cruise_sup);
+rho = Atm.density(altitude_cruise_sup) * u.kg / u.m^3;
+a = Atm.sonic_speed(altitude_cruise_sup) * u.m / u.s;
+mu = Atm.viscosity_dyn(altitude_cruise_sup) * u.kg / u.m / u.s;
+
+t_SL = Atm.temp(altitude_SL);
+rho_SL = Atm.density(altitude_SL) * u.kg / u.m^3;
+a_SL = Atm.sonic_speed(altitude_SL) * u.m / u.s;
+mu_SL = Atm.viscosity_dyn(altitude_SL) * u.kg / u.m / u.s;
 
 % Part 0.5 
 % Oswald effciency factor
 e_oswald = 4.61 * (1 - 0.045 * wing.aspect_ratio^0.68) * (cos(wing.sweep.LE)^0.15) - 3.1; % Raymer eq. 12.49
 
 AoA = linspace(-pi/12, pi/3, 251);
-%% ASSUMING MCS_W %%
-Kp = (2*pi*wing.aspect_ratio) / (2 + sqrt(wing.aspect_ratio^2 * (1 + tan(wing.sweep.MC)) + 4)); 
-%% ASSUMING LES_W %%
+% ASSUMING MCS_W 
+Kp = (2*pi*wing.aspect_ratio) / (2 + sqrt(wing.aspect_ratio^2 * (1 + tan(wing.sweep.MC)) + 4));
+
+% ASSUMING LES_W 
 Kv = pi * wing.aspect_ratio / 2 / cos(wing.sweep.LE); 
 C_Lp = Kp * sin(AoA).*(cos(AoA).^2);
 C_Lv = Kv * (sin(AoA).^2).*cos(AoA);
 C_L = C_Lp + C_Lv;
 C_L_noVortex = C_Lp;
 
+% Calculating Form Drag (FF) Factors for Drag Buildup
 Z_w = (2 - M^2)*cos(wing.sweep.QC) / sqrt(1 - (M*cos(wing.sweep.QC))^2); % Sweep correction factor from Shevell, slide 15
 wing.ff.form = 1 + Z_w*(wing.thickness_over_chord) + 100*(wing.thickness_over_chord)^4;
-
 Z_ht = (2 - M^2)*cos(tail_h.sweep.QC) / sqrt(1 - (M*cos(tail_h.sweep.QC))^2);
 tail_h.ff.form = 1 + Z_ht*(tail_h.thickness_over_chord) + 100*(tail_h.thickness_over_chord)^4;
-
 Z_vt = (2 - M^2)*cos(tail_v.sweep.QC) / sqrt(1 - (M*cos(tail_v.sweep.QC))^2);
-
 tail_v.ff.form = 1 + Z_vt*(tail_v.thickness_over_chord) + 100*(tail_v.thickness_over_chord)^4;
 nacelle.ff.form = 1 + 0.35 / (nacelle.len.length / nacelle.len.diameter);
 fslg.ff.form = 0.9+5/(fslg.len.length/fslg.len.diam)^1.5+(fslg.len.length/fslg.len.diam)/400;
 FF = ul([fslg.ff.form wing.ff.form tail_h.ff.form tail_v.ff.form nacelle.ff.form]);
 
-% Interference factors
-fslg.ff.interference = 1;           % The nacelles seem more than Dn away from the fuselage
+% Interference factors (From Nicolai)
+fslg.ff.interference = 1;           % The nacelles are more than Dn away from the fuselage
 wing.ff.interference = 1;
 tail_v.ff.interference = 1.03;      % Seems both V and conventional
 tail_h.ff.interference = 1.08;      % Horizontal stabilizer separate component
 nacelle.ff.interference = 1.3;      % Seems less than Dn away from wing
 Q = ul([fslg.ff.interference wing.ff.interference tail_h.ff.interference tail_v.ff.interference nacelle.ff.interference]);
 
-% Skin friction factors  
-fslg.reynolds = separateUnits(fslg.len.length * (V * rho / mu));
+%% Have Separate Drag Buildup Function
+
+% Skin friction (Cf) factors for subsonic
+fslg.reynolds = separateUnits(fslg.len.length * (V_cruise * rho / mu));
 fslg.ff.skin = 0.455 / (log10(fslg.reynolds)^2.58);
-wing.reynolds = separateUnits(wing.len.chord_mean * (V * rho / mu));
+wing.reynolds = separateUnits(wing.len.chord_mean * (V_cruise * rho / mu));
 wing.ff.skin = 0.455 / (log10(wing.reynolds)^2.58);
-tail_h.reynolds = separateUnits(tail_h.len.chord_mean * (V * rho / mu));
+tail_h.reynolds = separateUnits(tail_h.len.chord_mean * (V_cruise * rho / mu));
 tail_h.ff.skin = 0.455 / ( log10(tail_h.reynolds)^2.58);
-tail_v.reynolds = separateUnits(tail_v.len.chord_mean * (V * rho / mu));
+tail_v.reynolds = separateUnits(tail_v.len.chord_mean * (V_cruise * rho / mu));
 tail_v.ff.skin = 0.455 / ( log10(tail_v.reynolds)^2.58);
-nacelle.reynolds = separateUnits(nacelle.len.length * (V * rho / mu));
+nacelle.reynolds = separateUnits(nacelle.len.length * (V_cruise * rho / mu));
 nacelle.ff.skin = 0.455 / ( log10(nacelle.reynolds)^2.58);
 C_f = ul([fslg.ff.skin wing.ff.skin tail_h.ff.skin tail_v.ff.skin nacelle.ff.skin]);
 
+% Skin friction (Cf) factors for supersonic
+fslg.reynolds_sup = separateUnits(fslg.len.length * (V_Sup * rho / mu));
+fslg.ff.skin_sup = 0.455 / (log10(fslg.reynolds_sup)^2.58);
+wing.reynolds_sup = separateUnits(wing.len.chord_mean * (V_Sup * rho / mu));
+wing.ff.skin_sup = 0.455 / (log10(wing.reynolds_sup)^2.58);
+tail_h.reynolds_sup = separateUnits(tail_h.len.chord_mean * (V_Sup * rho / mu));
+tail_h.ff.skin_sup = 0.455 / ( log10(tail_h.reynolds_sup)^2.58);
+tail_v.reynolds_sup = separateUnits(tail_v.len.chord_mean * (V_Sup * rho / mu));
+tail_v.ff.skin_sup = 0.455 / ( log10(tail_v.reynolds_sup)^2.58);
+nacelle.reynolds_sup = separateUnits(nacelle.len.length * (V_Sup * rho / mu));
+nacelle.ff.skin_sup = 0.455 / ( log10(nacelle.reynolds_sup)^2.58);
+C_f_sup = ul([fslg.ff.skin_sup wing.ff.skin_sup tail_h.ff.skin_sup tail_v.ff.skin_sup nacelle.ff.skin_sup]);
+
+
+% Converting to numeric (from symbolic with units)
 fslg.len.diam   = dia_fuselage;      % already numeric in meters
 fslg.len.length = len_fuselage;      % numeric in meters
 wing.len.chord_root = c_r;           % numeric in meters
@@ -294,6 +320,7 @@ tail_h.area_ref    = S_ht;           % numeric in m^2
 tail_v.area_ref    = S_vt;           % numeric in m^2
 nacelle.len.diameter = d_N/3.281;    % numeric in meters
 nacelle.len.length   = l_N/3.281;    % numeric in meters
+
 fslg.fineness_ratio = fslg.len.length/fslg.len.diam;
 
 fslg.area.wet    = pi * fslg.len.diam * fslg.len.length * ((1 - 2/fslg.fineness_ratio)^(2/3)) * (1 + 1/fslg.fineness_ratio^2);
@@ -305,16 +332,19 @@ nacelle.area.wet = pi * nacelle.len.diameter * nacelle.len.length;
 % Combine into numeric array
 S_wet = [fslg.area.wet, wing.area.wet, tail_h.area.wet, tail_v.area.wet, nacelle.area.wet];
 
-% component build up
-C_D0 = sum((FF .* Q .* C_f .* S_wet), 'all')/wing.area.ref;
-%Add misc drag
-C_D0_misc = 0.1 * C_D0;  % estimation from drag pred pg 25
-C_D0 = C_D0 + C_D0_misc; % add the misc values in
+% component build up for both sub and super sonic
+C_D0_sub = sum((FF .* Q .* C_f .* S_wet), 'all')/wing.area.ref;
+C_D0_Sup = sum((FF .* Q .* C_f_sup .* S_wet), 'all')/wing.area.ref;
+% Add misc drag
+C_D0_misc_sub = 0.1 * C_D0_sub;  % estimation from drag pred pg 25
+C_D0_sub = C_D0_sub + C_D0_misc_sub; % add the misc values in
+C_D0_Sup = 1.1*C_D0_Sup;
+
 % Calculate M_DD
 SWP = wing.sweep.QC;  % assuming that the sweep angle given in the eqn is quarter chord sweep for the wing
 
-% Cdwake
-C_L_des = ul(aircraft.weight / (0.5 * rho * V^2 * wing.area.ref));
+% Cdwake for both sub and super sonic
+C_L_des = ul(aircraft.weight / (0.5 * rho * V_cruise^2 * wing.area.ref));
 M_DD = K_A/cos(SWP) - wing.thickness_over_chord/(cos(SWP)^2) - C_L_des / (10 * (cos(SWP)^3));
 M_crit = M_DD - 0.08;
 % c_dc has something to do with speed in mach
@@ -322,8 +352,8 @@ K_sub = 1 / (pi * wing.aspect_ratio * e_oswald);
 K_sup = wing.aspect_ratio * (M^2 - 1) * cos(wing.sweep.LE) / (4 * wing.aspect_ratio * sqrt(M^2 - 1) - 2);
 C_Di = K_sub * (C_L.^2);
 C_Di_noVortex = K_sub * (C_L_noVortex.^2);
-C_D = C_D0 + C_Di;
-C_D_noVortex = C_D0 + C_Di_noVortex;
+C_D = C_D0_sub + C_Di;
+C_D_noVortex = C_D0_sub + C_Di_noVortex;
 
 % Part 3: Supersonic Effects and Cruise Efficiency
 % Iteration Variables
@@ -371,7 +401,7 @@ end
 
 % Plotting the required graphs
 % Plot 1
-C_D_ZL = C_D0 + C_D_wakes;
+C_D_ZL = C_D0_sub + C_D_wakes;
 figure;
 plot(Machs, C_D_ZL)
 title('Total Zero-Lift Drag Rise with Mach Number');
@@ -380,7 +410,7 @@ ylabel("C_{DZL}")
 grid on;
 
 % Plot 2
-LDMax = 1./sqrt(4.*C_D0.*Ks);
+LDMax = 1./sqrt(4.*C_D0_sub.*Ks);
 figure;
 plot(Machs, LDMax);
 xlabel("Mach")
@@ -474,12 +504,12 @@ max_loading_takeoff = p_takeoff.wing_loading(C_L_max, K_takeoff);
 % 4B: Performance Limits
 % Task B
 % Task B-1: Supersonic Dash, Mach 1.6 @ 35kft, wet thrust
-p_supersonic = FlightPhase(h * u.ft, b_combatturn, "Low-bypass turbofan, wet thrust", mach_number=M_supersonic);
-twr_supersonic = p_supersonic.twr(wing_loading_range, 0.0541, 0.3005);
+p_supersonic = FlightPhase(h_cruise_sup * u.ft, b_combatturn, "Low-bypass turbofan, wet thrust", mach_number=M_supersonic);
+twr_supersonic = p_supersonic.twr(wing_loading_range, C_D0_Sup, K_sup);
 
 % Task B-2: Strike Dash, Mach 0.85 @ SL, dry thrust
 p_strike = FlightPhase(0, b_combatturn, "Low-bypass turbofan, dry thrust", mach_number=M_strike);
-twr_strike = p_strike.twr(wing_loading_range, C_D0, K);
+twr_strike = p_strike.twr(wing_loading_range, C_D0_sub, K_sub);
 
 % Task B-3: Sustained Turn, 8 deg/s @ 20k ft, M0.7, 0.8, 0.9, wet thrust
 % Mattingly eq. 2.2.3
@@ -493,7 +523,7 @@ end
 
 % Task B-4: SEROC, 500 ft/min single-engine in approach config, wet thrust?
 p_seroc = FlightPhase(0, b_landing, "Low-bypass turbofan, wet thrust", velocity=v_approach, dh_dt=500*u.ft/u.min);
-twr_seroc = p_seroc.twr(wing_loading_range, 0.0195, 0.0955);
+twr_seroc = p_seroc.twr(wing_loading_range, 0.0195, K_sub);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % WHY ARE THESE CD0 AND K VALUES DIFFERENT/THE SAME?!?!?!??!??!??!?!??!???
