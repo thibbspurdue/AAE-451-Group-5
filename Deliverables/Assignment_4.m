@@ -10,9 +10,25 @@ u = symunit;              % MATLAB trig functions work with symbolic units
 aircraft.weight = unitConvert(66000 * u.lbf, u.N);
 KA = 0.95;                % Supercritical airfoild number thing slide 10
 
-fuselage = Fuselage()
-fslg.len.diam = 2.165 * u.m;
-fslg.len.length = 18.379 * u.m;
+fuselage = Fuselage.Fuselage_Hotdog( ...
+    'interference_factor', 1, ...
+    'length', 18.738 * u.m, ...
+    'diameter', 2.165 * u.m);
+
+wing = Wing( ...
+    'interference_factor', 1, ...
+    'wingspan', 44.9 * u.ft, ...
+    'chord_root', 4.61 * u.m, ...
+    'chord_tip', 1.5 * u.m, ...
+    'aspect_ratio', 4, ...
+    'leading_edge_sweep', 30 * u.deg, ...
+    'quarter_chord_sweep', 25 * u.deg, ...
+    'mid_chord_sweep', 19.52 * u.deg);
+
+htail_left = Tail(1.08, 3.56 * u.m, 4.11 * u.m, 1.11 * u.m, 0.04, ...
+    'leading_edge_sweep', 53.12 * u.deg, ...
+    'quarter_chord_sweep', 48.28571 * u.deg, ...
+    'mid_chord_sweep', 31.943 * u.deg);
 
 % Wing Geometry
 wing.span = 44.9 * u.ft;
@@ -115,7 +131,7 @@ C_f = ul([fslg.ff.skin wing.ff.skin tail_h.ff.skin tail_v.ff.skin nacelle.ff.ski
 
 % Wetted area of the different components
 fslg.area.wet = pi * fslg.len.diam * fslg.len.length * ( (1 - 2/fslg.fineness_ratio)^(2/3) ) * (1 + 1/fslg.fineness_ratio^2);
-wing.area.wet = (wing.area.ref - wing.len.chord_root * fslg.len.diam) * 2 * 1.02; %removing the area also covered by the fuselage
+wing.area.wet = (wing.area.ref - wing.len.chord_root * fslg.len.diam) * 2 * 1.02; % removing the area also covered by the fuselage
 tail_h.area.wet = tail_h.area_ref * 2 * 1.02;
 tail_v.area.wet = tail_v.area_ref * 2 * 1.02;
 nacelle.area.wet = pi * nacelle.len.diameter * nacelle.len.length;
@@ -187,7 +203,8 @@ for i = 1:length(Machs)
     % ---- Induced drag at this Mach (this was missing) ----
     C_D_is(i) = K * (C_L_M^2);
 end
-% Plotting the required graphs
+
+%% Plotting the required graphs
 % Plot 1
 C_D_ZL = C_D0 + C_D_wakes;
 figure;

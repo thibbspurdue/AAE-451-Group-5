@@ -5,33 +5,30 @@ classdef Component
     % attributes are defined.
 
     properties
-        fineness_ratio = 0
-        form_factor = 0
-        interference_factor = 0
-        wetted_area = 0
+        interference_factor = 1
         mass = 0
+        wetted_area
     end
-    % properties (Dependent)
-    %     wetted_area
-    % end
 
-    methods
-        function obj = Component(interference_factor, form_factor, wetted_area)
+    methods (Access = public)
+        function obj = Component(interference_factor, wetted_area, mass)
             % COMPONENT Construct a generic Component object.
+            arguments
+                interference_factor
+                wetted_area = 0
+                mass = 0
+            end
+
             if nargin == 0
                 return
             end
+
             obj.interference_factor = interference_factor;
-            obj.form_factor = form_factor;
             obj.wetted_area = ul(wetted_area);
+            obj.mass = ul(mass);
         end
 
-        function re = reynolds_number(length, altitude, velocity)
-            [length, altitude, velocity] = ul([length, altitude, velocity]);
-            re = length * velocity * Atm.density(altitude) / Atm.viscosity_dyn(altitude);
-        end
-
-        function output = CD0(obj, skin_friction_coeff, ref_wing_area)
+        function output = calc_cd0(obj, skin_friction_coeff, ref_wing_area)
             % CALC_CD0 Calculates and returns parasitic drag of component
             arguments
                 obj
@@ -44,8 +41,21 @@ classdef Component
     end
 
     methods (Static)
-        function output = skin_friction_coeff(reynolds_number)
-            % CALC_SKIN_FRICTION_COEFF Returns skin friction coefficient as
+        function re = calc_reynolds_number(length, altitude, velocity)
+            arguments
+                length 
+                altitude 
+                velocity 
+            end
+            [length, altitude, velocity] = ul([length, altitude, velocity]);
+            re = length * velocity * Atm.density(altitude) / Atm.viscosity_dyn(altitude);
+        end
+
+        function output = calc_skin_friction_factor(reynolds_number)
+            arguments
+                reynolds_number
+            end
+            % SKIN_FRICTION_COEFF Returns skin friction coefficient as
             % determined using simplified 'Schlichting Formula' from Week 3
             % Slide 11. Requires Reynolds number.
             output = 0.455 / (log10(reynolds_number)^2.58);

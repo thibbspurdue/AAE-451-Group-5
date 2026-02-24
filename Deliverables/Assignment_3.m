@@ -15,8 +15,8 @@ Combat_L_D = 4.5;      % Assignment 4
 Loiter_L_D = 11;       % Assignment 4
 Kvs = 1;               % 1 for fixed wing sweep
 AR = 4;                % 
-Wing_loading = 80;     %lb/ft^2
-Thrust_Weight = 1.3;
+Wing_loading = 96;     %lb/ft^2
+Thrust_Weight = 0.93;
  
 %% Fixed Parameters
 W_payload = 6000;   %lbs, Assignment 3

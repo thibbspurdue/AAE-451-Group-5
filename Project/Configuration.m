@@ -1,19 +1,17 @@
 classdef Configuration
     % CONFIGURATION Defines a Configuration object containing information
     % to calculate physical properties such as lift and drag.
-    %   Detailed explanation goes here
     
     properties
         aspect_ratio
         fuselage_diameter
         wingspan
-        
     end
     
     methods
         function obj = Configuration(inputArg1,inputArg2)
-            %DRAG Construct an instance of this class
-            %   Detailed explanation goes here
+            % Configuration Construct an instance of this class
+            % Detailed explanation goes here
             obj.Property1 = inputArg1 + inputArg2;
         end
         

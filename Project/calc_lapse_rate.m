@@ -31,7 +31,7 @@ function alpha = calc_lapse_rate(altitude, mach_number, throttle_ratio, engine_c
 
     gamma = 1.4; % air heat capacity ratio, assumed constant, ul
     [t_sl, ~, p_sl] = atmosisa(0); % sea level conditions, speed of sound unneeded
-    [t, a, p] = atmosisa(altitude);
+    [t, ~, p] = atmosisa(altitude);
 
     alpha = zeros(length(altitude));
     for i = 1:length(altitude)
