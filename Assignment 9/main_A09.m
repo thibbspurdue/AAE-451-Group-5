@@ -2,6 +2,14 @@
 % Assignment 9
 % AAE 45100 Aircraft design
 % Team 05
+% Code overview:
+%
+% Subfunctions required to compile:
+% task1.m (to be renamed)
+% task2.m (to be renamed)
+% Drag_Complex.m
+% Parameter_Import
+% Parameters_rebalance
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %% Tasks that must be done in order for this assignment
@@ -12,17 +20,9 @@
 
 %% Variables needed for calculation (please alter this section later on)
 
-% Work on T - Min
+% 
 
-%% Basic setup
-% Remove after merging branch
-u = symunit; % Initialise symbolic units object
-
-% Remove after merging branch
-function output = ul(input)
-    output = double(separateUnits(input));
-end
-
+%% Parameters derivation
 spreadsheet = 'Parameters_copy.xlsx';
 aircraft = 'Grinch';
 airfoil = 'Airfoil';
@@ -34,39 +34,16 @@ QCS_w = Swp_w;
 QCS_ht = Swp_ht;
 QCS_vt = Swp_vt;
 S_ref = S;
-C_D0 = Drag_Complex(Q, l_f, d_f, l_N, d_N, QCS_w, QCS_ht, QCS_vt, t_c_w, t_c_ht, t_c_vt, c_bar, c_r, c_ht, c_vt, S_ref, S_w, S_t, S_v);
+
+%% Code iteration from previous assignments
+C_D0 = Drag_Complex(Q, l_f, d_f, l_N, d_N, QCS_w, QCS_ht, QCS_vt, t_c_w, t_c_ht, t_c_vt, c_bar, c_r, c_ht, c_vt, S_ref, S_w, S_t, S_v); 
+e = 4.61 * (1 - 0.045*AR^0.68) * (cos(Swp_w)^0.15) - 3.1;
 
 %% Task 1. Carrier Takeoff Performance
-task1
+task1(W,S,C_L_max,C_D0,AR,e,g)
 
 %% Task 2. Maneuvering Performance
-
-[temp,v_sound,p,rho,nu,mu] = atmosisa(separateUnits(unitConvert(20000*u.ft),'SI')); 
-
-v_sound = v_sound * u.m / u.s;
-p = p * u.pa;
-rho = rho * u.kg / (u.m^3);
-
-mach = linspace(0,1.6,1000);
-V = mach .* v_sound;
-V_stall = sqrt(2*W/(rho*S*C_L_max));
-L = 1/2 * rho .* V.^2 * S * C_L;
-R = [300 500 1000 2000] .* u.m;
-
-n =  L/W; %% LOAD FACTOR, DON'T OVERWRITE
-n_lift = 1/2 * rho * V_stall.^2 * S * C_L_max / W;
-n_sust = sqrt((T/q/S- C_D0) ./ K);
-n_max = 7.5; % Apparently from the RFP %q*C_L_max/(W/S);
-
-n(n>n_max) = n_max;
-
-V_corner = sqrt(2*n_max*W/(rho*S*C_L_max));
-
-w_radius = V ./ R;
-w_load = g * sqrt(n.^2-1) ./ V;
-w_corner = V_stall / R;
-% Doghouse plotting
-
+task2(C_L_max,S,C_D0,AR,e,W)
 
 %% Task 3. Flight Envelope and Specific Excess Power - Tabitha
 
@@ -87,10 +64,10 @@ hold on
 plot(V_eng, k_E_eng,'Marker','.')
 %% Task 6. Single Engine Rate of Climb (SEROC)
 D = 1/2 * rho .* V.^2 * S * C_D;
-SEROC = V * (T/2 - D);
+SEROC = V * (T_max/2 - D);
 
 %% Task 7. Climb Performance: Rate and Angle of Climb
-a_climb = asin((T-D)/W);
+a_climb = asin((T_max-D)/W);
 ROC = V * sin(a_climb);
 
 %% Task 8. Payload-Range Envelope
