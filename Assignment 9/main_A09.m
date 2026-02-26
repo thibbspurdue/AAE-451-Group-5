@@ -20,13 +20,14 @@
 % Need the weights generally
 
 %% Unit stuff?
+u = symunit;
 function output = ul(input)
     output = double(separateUnits(input));
 end
 
 %% Parameters derivation
 spreadsheet = 'Parameters_copy.xlsx';
-aircraft = 'Grinch';
+aircraft = 'Sunfish';
 airfoil = 'Airfoil';
 
 Parameter_Import(spreadsheet, aircraft, airfoil);
@@ -57,12 +58,13 @@ Loiter_L_D = 11;                   % Assignment 4
 %% Code iteration from previous assignments
 C_D0 = Drag_Complex(Q, l_f, d_f, l_N, d_N, QCS_w, QCS_ht, QCS_vt, t_c_w, t_c_ht, t_c_vt, c_bar, c_r, c_ht, c_vt, S_ref, S_w, S_t, S_v); 
 e = 4.61 * (1 - 0.045*AR^0.68) * (cos(Swp_w)^0.15) - 3.1;
+g = 9.81 * u.m / u.s^2;
 
 %% Task 1. Carrier Takeoff Performance
-task1(W,S,C_L_max,C_D0,AR,e,g)
+TO_performance(W,S,C_L_max,C_D0,AR,e,g)
 
 %% Task 2. Maneuvering Performance
-task2(C_L_max,S,C_D0,AR,e,W)
+doghouse(C_L_max,S,C_D0,AR,W,Swp_w,t_c_w)
 
 %% Task 3 + 4. Flight Envelope and Specific Excess Power
 %C_D0L is the 0 Lift Coefficent of Drag when th eplane is loaded
@@ -71,24 +73,72 @@ Flight_envelope(AR, SWP_w, S, t_c_w, W, T_SL, C_D0, C_D0L);
 
 %% Task 5. Carrier Landing and Arrestment
 app_coef = 1.1; % range from 1.1 ~ 1.15
-V_app = app_coef * v_stall;
-V_eng = 1.05 * v_app - v_wod;
-V_eng_range = unitConvert(linspace(100,160).*u.knot, 'SI');
-k_E_eng = 1/2*m*v_eng^2;
-C2 = unitConvert(40000 * u.lbs * (145 * u.knot)^2, 'SI');
-W_arrest_limit = C2 ./ (V_eng_range^2);
+V_wod = 15 * u.knot; % Arbitrary
+L_s = 344 * u.ft;
+
+V_stall = sqrt(2*W*g/(Atm.density(0*u.ft)*u.kg/u.m^3*S*C_L_max));
+V_app = app_coef * V_stall;
+V_eng = unitConvert(1.05 * V_app - V_wod, u.knot);
+V_eng_range = linspace(100,180).*u.knot; 
+%k_E_eng = 1/2*unitConvert(W,'US')*V_eng^2;
+C2 = 40000 * u.lbf * (145 * u.knot)^2; 
+W_arrest_limit = C2 ./ (V_eng_range.^2);
 
 figure()
-plot(V_eng_range, W_arrest_limit)
 hold on
-plot(V_eng, k_E_eng,'Marker','.')
-%% Task 6. Single Engine Rate of Climb (SEROC)
-D = 1/2 * rho .* V.^2 * S * C_D;
-SEROC = V * (T_max/2 - D);
+area(separateUnits(unitConvert(V_eng_range, u.knot)), separateUnits(W_arrest_limit), 'FaceColor',[0.95 0.9 0.9], 'EdgeColor','none')
+plot(separateUnits(unitConvert(V_eng_range, u.knot)), separateUnits(W_arrest_limit))
+ylim([20000 70000])
+plot(separateUnits(unitConvert(V_eng, u.knot)), separateUnits(unitConvert(W*g, u.lbf)),'Marker','.','MarkerSize',10,'LineStyle','none')
+grid on
+grid minor
+title("Arresting gear performance")
+xlabel("Engaging speed (knots)")
+ylabel("Airplane weight (lbf)")
+legend('', 'Weight capacity for Mark 7 mod 3', 'Landing condition')
+hold off
+%% Task 6 & 7 Setup: Single Engine Rate of Climb (SEROC) & Climb Performance: Rate and Angle of Climb
+% Run this first before running either 6 or 7
 
-%% Task 7. Climb Performance: Rate and Angle of Climb
-a_climb = asin((T_max-D)/W);
-ROC = V * sin(a_climb);
+V_climb_range = unitConvert(u.knot .*linspace(200,1000,100),'SI');
+rho = Atm.density(10000* u.ft) * u.kg/u.m^3;
+Mb = ul(V_climb_range) ./Atm.sonic_speed(10000*u.ft);
+hb = ul(10000*u.ft);
+K = K_find_matrix(Mb,ul(AR),ul(Swp_w), ul(t_c_w), ul(W), hb, ul(S));
+C_L_req = ul(W*g./(1/2*rho*V_climb_range.^2*S));
+C_D = C_D0 + K .* C_L_req.^2;
+T_dry = 123E3 * u.N;
+T_wet = 191E3 * u.N;
+
+D = 1/2 * rho .* V_climb_range.^2 * S .* C_D;
+
+%% Task 6 Plot
+SEROC = ul(V_climb_range .* (T_wet - D) / (W*g));
+
+%% Task 7 Plot
+a_climb = asind(ul((T_dry * 2 - D)/(W*g)));
+ROC = ul(V_climb_range .* (T_dry * 2 - D)/(W*g));
+
+max_a = [max(a_climb) ul(V_climb_range(a_climb==max(a_climb)))];
+max_ROC = [max(ul(ROC)) ul(V_climb_range(ROC==max(ROC))) a_climb(ROC==max(ROC))];
+
+figure()
+grid on
+grid minor
+yyaxis left
+hold on
+plot(ul(V_climb_range), ROC, 'b:')
+plot(max_ROC(2), max_ROC(1), 'LineStyle','none','Marker','.','MarkerSize',15, 'MarkerFaceColor','b')
+ylabel("Rate of climb in m/s","Color",'b')
+yyaxis right
+plot(ul(V_climb_range), a_climb, 'r')
+ylabel("Angle of climb in degrees",'Color','r')
+plot(max_a(2), max_a(1), 'LineStyle','none','Marker','.','MarkerSize',15, 'MarkerFaceColor','r')
+
+legend("Rate of climb", "Maximum ROC = "+real(max_ROC(1))+" m/s at Vy = "+real(max_ROC(2)*cosd(max_ROC(3))), ...
+    "Angle of climb", "Maximum AOC = "+real(max_a(1))+" degrees at Vx = "+real(max_a(2)*sind(max_a(1))), 'Location','best')
+title("Aircraft climb performance at 10,000 ft")
+xlabel("Airspeed in m/s")
 
 %% Task 8. Payload-Range Envelope
 %Point definition [range, payload_weight]
