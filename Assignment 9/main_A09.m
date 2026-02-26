@@ -49,6 +49,11 @@ Cruise_L_D = 9.2;                  % Assignment 4
 Combat_L_D = 4.5;                  % Assignment 4
 Loiter_L_D = 11;                   % Assignment 4
 
+%dummy values used for testing the range
+% MTOW = 90000 * 0.45359237 * u.kg;
+% W_E = 50000* 0.45359237 * u.kg;%empty weight
+% W_Fuel_Limit = 35000* 0.45359237 * u.kg;%we dont know this yet, def in kg
+% V_Cruise = 400 * u.m/u.s;
 %% Code iteration from previous assignments
 C_D0 = Drag_Complex(Q, l_f, d_f, l_N, d_N, QCS_w, QCS_ht, QCS_vt, t_c_w, t_c_ht, t_c_vt, c_bar, c_r, c_ht, c_vt, S_ref, S_w, S_t, S_v); 
 e = 4.61 * (1 - 0.045*AR^0.68) * (cos(Swp_w)^0.15) - 3.1;
@@ -61,6 +66,7 @@ task2(C_L_max,S,C_D0,AR,e,W)
 
 %% Task 3 + 4. Flight Envelope and Specific Excess Power
 %C_D0L is the 0 Lift Coefficent of Drag when th eplane is loaded
+C_D0L = C_D0; %Assuming everything is stored inside the aircraft
 Flight_envelope(AR, SWP_w, S, t_c_w, W, T_SL, C_D0, C_D0L);
 
 %% Task 5. Carrier Landing and Arrestment
