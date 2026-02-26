@@ -1,4 +1,4 @@
-function task2(C_L_max,S,C_D0,AR,e,W)
+function doghouse(C_L_max,S,C_D0,AR,W,Swp_w,t_c_w)
     %% Will be deleted in the future
     u = symunit; % Initialise symbolic units object
 
@@ -6,19 +6,12 @@ function task2(C_L_max,S,C_D0,AR,e,W)
         output = double(separateUnits(input));
     end
     %% initialization
-    % PLEASE TELL ME HOW ATM WORKS I CAN'T FIND WHERE THE FUNCTION IS IN
-    % DIRECTORY ;_;
-    [~,v_sound,p,rho,~,~] = atmosisa(ul(20000*u.ft)); 
-    [~,~,p_sl,~,~,~] = atmosisa(0);
+    [~,v_sound,~,rho,~,~] = atmosisa(ul(20000*u.ft)); 
     num_it = 100;
     
-    mach = linspace(0.3,2.3,100);
-    p_sl_st = p_sl * (1 + 0.4/2 .* mach.^2) .^ (1.4/0.4);
-    p_st = p * (1 + 0.4/2 .* mach.^2) .^ (1.4/0.4);
-    a = 0.6 * p_st ./ p_sl_st;
-    
+    mach = linspace(0.3,2.3,num_it);
     v_sound = v_sound * u.m / u.s;
-    p = p * u.pa;
+
     rho = rho * u.kg / (u.m^3);
     g = 9.81 * u.m / u.s^2;
     
@@ -27,9 +20,9 @@ function task2(C_L_max,S,C_D0,AR,e,W)
     q = rho .* V.^2 / 2;    % Dynamic pressure for given V range
     L = 1/2 * rho .* V.^2 * S * C_L_max;    % Maximum lift for given V range
     R = [2500 4500 8000 13000] .* u.m;  % Turn radius in m
-    C_D = C_D0 + C_L_max/(pi*AR*e); % Coefficient of drag as f(C_L(V)) <- since it is well above subsonic range, I might need second person to look over this
-    T = 1/2 * rho .* V.^2 * S * C_D;    % Assumed Ps = 0
-    K = 1 / (pi * AR * e);  % Derived from assignment 8 (further references unknown)
+    K = K_find_matrix(mach,ul(AR),ul(Swp_w),ul(t_c_w),ul(W),ul(unitConvert(20000*u.ft,'SI')),ul(S));
+    C_D = C_D0 + C_L_max^2.*K;
+    T = 1/2 * rho .* V.^2 * S .* C_D;    % Assumed Ps = 0
     
     W_new = W * g;  % n equations treat W as weight(N)
     
