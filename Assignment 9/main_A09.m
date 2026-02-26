@@ -71,3 +71,36 @@ a_climb = asin((T_max-D)/W);
 ROC = V * sin(a_climb);
 
 %% Task 8. Payload-Range Envelope
+MTOW = ;
+W_E = ;%empty weight
+W_Fuel_Limit = ;%we dont know this yet, def in kg
+W_payload = ul(10215* u.lbm); 
+W_payload = unitConvert(W_payload, u.kg);
+
+%Point definition [range, payload_weight]
+
+%A is range 0, max payload
+A = [0, W_payload];
+
+%B is max payload, corresponding range
+R = Range(W_payload, W_E, MTOW, V_Cruise, Cruise_L_D, Combat_L_D, Loiter_L_D);
+B = [R, W_payload];
+
+%C is still MTOW, but hits the fuel limit
+W_p = MTOW - W_E - W_Fuel_Limit;
+R = Range(W_p, W_E, MTOW, V_Cruise, Cruise_L_D, Combat_L_D, Loiter_L_D);
+C = [R, W_p];
+
+%D is at 0 payload with the fuel limit
+R = Range(0, W_E, W_E + W_Fuel_Limit, V_Cruise, Cruise_L_D, Combat_L_D, Loiter_L_D);
+D = [R, 0];
+
+%Plotting
+x = [A(1) B(1) C(1) D(1) 0];
+y = [A(2) B(2) C(2) D(2) 0];
+
+fill(x, y, [0.2 0.6 0.9]);
+xlabel('Range [nmi]');
+ylabel('Payload weight [kg]');
+axis tight;
+grid on;
