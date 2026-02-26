@@ -12,15 +12,17 @@
 % Parameters_rebalance
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%% Tasks that must be done in order for this assignment
+%% Tasks that must be done in order for this assignment to work
 
 % Thrust function
 % accepts input parameters as vectors
 % velocity altitude 
+% Need the weights generally
 
-%% Variables needed for calculation (please alter this section later on)
-
-% 
+%% Unit stuff?
+function output = ul(input)
+    output = double(separateUnits(input));
+end
 
 %% Parameters derivation
 spreadsheet = 'Parameters_copy.xlsx';
@@ -34,6 +36,18 @@ QCS_w = Swp_w;
 QCS_ht = Swp_ht;
 QCS_vt = Swp_vt;
 S_ref = S;
+
+%% Variables needed for calculation (please alter this section later on)
+MTOW = ;
+W_E = ;%empty weight
+W_Fuel_Limit = ;%we dont know this yet, def in kg
+W_payload = ul(10215* u.lbm); 
+W_payload = unitConvert(W_payload, u.kg);
+V_Cruise = ;%Need to find optimal cruising speed?
+
+Cruise_L_D = 9.2;                  % Assignment 4
+Combat_L_D = 4.5;                  % Assignment 4
+Loiter_L_D = 11;                   % Assignment 4
 
 %% Code iteration from previous assignments
 C_D0 = Drag_Complex(Q, l_f, d_f, l_N, d_N, QCS_w, QCS_ht, QCS_vt, t_c_w, t_c_ht, t_c_vt, c_bar, c_r, c_ht, c_vt, S_ref, S_w, S_t, S_v); 
@@ -71,12 +85,6 @@ a_climb = asin((T_max-D)/W);
 ROC = V * sin(a_climb);
 
 %% Task 8. Payload-Range Envelope
-MTOW = ;
-W_E = ;%empty weight
-W_Fuel_Limit = ;%we dont know this yet, def in kg
-W_payload = ul(10215* u.lbm); 
-W_payload = unitConvert(W_payload, u.kg);
-
 %Point definition [range, payload_weight]
 
 %A is range 0, max payload
@@ -84,23 +92,33 @@ A = [0, W_payload];
 
 %B is max payload, corresponding range
 R = Range(W_payload, W_E, MTOW, V_Cruise, Cruise_L_D, Combat_L_D, Loiter_L_D);
+R = unitConvert(R, u.nmi);
 B = [R, W_payload];
 
 %C is still MTOW, but hits the fuel limit
 W_p = MTOW - W_E - W_Fuel_Limit;
 R = Range(W_p, W_E, MTOW, V_Cruise, Cruise_L_D, Combat_L_D, Loiter_L_D);
+R = unitConvert(R, u.nmi);
 C = [R, W_p];
 
 %D is at 0 payload with the fuel limit
 R = Range(0, W_E, W_E + W_Fuel_Limit, V_Cruise, Cruise_L_D, Combat_L_D, Loiter_L_D);
+R = unitConvert(R, u.nmi);
 D = [R, 0];
 
 %Plotting
 x = [A(1) B(1) C(1) D(1) 0];
 y = [A(2) B(2) C(2) D(2) 0];
 
+x = ul(x);
+y = ul(y);
+
+x_max = round(1.25*x(4), 1, 'significant');
+y_max = round(1.25*y(1), 1, 'significant');
+
 fill(x, y, [0.2 0.6 0.9]);
 xlabel('Range [nmi]');
 ylabel('Payload weight [kg]');
-axis tight;
+xlim([0 x_max]); ylim([0 y_max]);
 grid on;
+title("Payload-Range Diagram")
