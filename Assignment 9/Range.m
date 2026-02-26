@@ -5,7 +5,7 @@ u = symunit; % Initialise symbolic units object
 %% RANGE Funciton gives a range using the Breguet Range Equation for a
 %specific payload weight
 %W_E is the weight of the aircraft with no fuel or payload
-V_Cruise = V_Cruise * u.m/u.s;
+
 %SFC values
 Cruise_SFC = 0.80*u.lbm/(u.lbf*u.hr);      % lb/lbf * hr, currently from propulsion system choice
 Combat_SFC = 1.9*u.lbm/(u.lbf*u.hr);       % lb/lbf * hr, currently from propulsion system choice
