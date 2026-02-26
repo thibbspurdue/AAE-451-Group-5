@@ -45,9 +45,9 @@ task1(W,S,C_L_max,C_D0,AR,e,g)
 %% Task 2. Maneuvering Performance
 task2(C_L_max,S,C_D0,AR,e,W)
 
-%% Task 3. Flight Envelope and Specific Excess Power - Tabitha
-
-%% Task 4. Impact of External Stores
+%% Task 3 + 4. Flight Envelope and Specific Excess Power
+%C_D0L is the 0 Lift Coefficent of Drag when th eplane is loaded
+Flight_envelope(AR, SWP_w, S, t_c_w, W, T_SL, C_D0, C_D0L);
 
 %% Task 5. Carrier Landing and Arrestment
 app_coef = 1.1; % range from 1.1 ~ 1.15
