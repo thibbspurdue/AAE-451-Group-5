@@ -2,7 +2,7 @@ function TO_performance(W,S,C_L_max,C_D0,AR,e,g)
     u = symunit; % Initialise symbolic units object
 
     [~,~,~,rho,~,visc] = atmosisa(0); 
-    tspan = [0 2.5];
+    tspan = [0 2];
     IC = 0;
     v_wod = 0;   % Refer to RFP 
     rho = rho * u.kg / u.m^3;
@@ -21,11 +21,21 @@ function TO_performance(W,S,C_L_max,C_D0,AR,e,g)
     V_stall = sqrt(2*W*g/(rho*S*C_L_max));
     d = cumtrapz(t, va);
     
-    % Work on plotting later on
     figure()
+    hold on
     plot(d, va)
-    yline(1.2*V_stall)
-    xline(double(separateUnits(unitConvert(L_cat, 'SI'))))
+    yline(1.2*V_stall, 'LineStyle','--','Color','r')
+    xline(double(separateUnits(unitConvert(L_cat, 'SI'))), 'LineStyle','--')
+    d_cutoff = max(d(d < 94.488));
+    va_cutoff = va(d==d_cutoff);
+    plot(d_cutoff, va_cutoff, 'LineStyle','none','Marker','.')
+    grid on
+    grid minor
+    title("Carrier Aircraft takeoff performance")
+    ylabel("Airspeed (m/s)")
+    xlabel("Distance along the deck (m)")
+    legend('Airspeed in m/s', 'Takeoff velocity in m/s', 'Catapult cutoff', "Airspeed at Catapult cutoff = "+num2str(va_cutoff)+" m/s", "Location","best")
+    hold off
     
     clear dvdt
 
