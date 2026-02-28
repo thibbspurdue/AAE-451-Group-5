@@ -5,19 +5,20 @@
 % Code overview:
 %
 % Subfunctions required to compile:
-% task1.m (to be renamed)
-% task2.m (to be renamed)
+% TO_performance.m
+% doghouse.m
 % Drag_Complex.m
 % Parameter_Import
 % Parameters_rebalance
+% Range.m
+% K_find_matrix.m
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %% Tasks that must be done in order for this assignment to work
 
-% Thrust function
-% accepts input parameters as vectors
-% velocity altitude 
-% Need the weights generally
+% Envelope function doesn't work for now; I think it's because the
+% temperature is not defined in the main, and I don't know what unit it
+% expects. 
 
 %% Unit stuff?
 u = symunit;
@@ -69,7 +70,7 @@ doghouse(C_L_max,S,C_D0,AR,W,Swp_w,t_c_w)
 %% Task 3 + 4. Flight Envelope and Specific Excess Power
 %C_D0L is the 0 Lift Coefficent of Drag when th eplane is loaded
 C_D0L = C_D0; %Assuming everything is stored inside the aircraft
-Flight_envelope(AR, SWP_w, S, t_c_w, W, T_SL, C_D0, C_D0L);
+Flight_envelope(AR, Swp_w, S, t_c_w, W, T_SL, C_D0, C_D0L);
 
 %% Task 5. Carrier Landing and Arrestment
 app_coef = 1.1; % range from 1.1 ~ 1.15
@@ -112,8 +113,30 @@ T_wet = 191E3 * u.N;
 
 D = 1/2 * rho .* V_climb_range.^2 * S .* C_D;
 
-%% Task 6 Plot
-SEROC = ul(V_climb_range .* (T_wet - D) / (W*g));
+%% Task 6 - output given in Command line
+% Takeoff procedure: Landing gear included
+M_TO = ul(V_stall*1.2) ./ Atm.sonic_speed(0);
+h_TO = 0;
+K_TO = K_find_matrix(M_TO,ul(AR), ul(Swp_w), ul(t_c_w), ul(W), h_TO, ul(S));
+C_L_req_TO = C_L_max / 1.21;    % Raymer P.129
+% Assuming frontal area is approx. 22 m2
+C_D_TO = C_D0 + 0.7 * 22 * u.m^2 / S_ref + K_TO * C_L_req_TO^2;
+D_TO = 1/2 * rho .* (V_stall*1.2)^2 * S_ref * C_D_TO;
+
+SEROC_TO = unitConvert(V_stall*1.2 * (T_wet - D_TO) / (W*g), u.ft / u.min);
+fprintf("The SEROC of takeoff is %.2f ft/min.\n", double(separateUnits(SEROC_TO)))
+
+% Approach procedure: Flap & Landing gear included
+M_app = ul(V_app) ./ Atm.sonic_speed(0);
+h_app = 0;
+K_app = K_find_matrix(M_app,ul(AR), ul(Swp_w), ul(t_c_w), ul(W), h_app, ul(S));
+C_L_req_app = 2*W*g/(rho*S*V_app^2);    % Raymer P.129
+% Assuming frontal area is approx. 22 m2, 0.075 to account for flaps
+C_D_app = C_D0 + 0.7 * 22 * u.m^2 / S_ref + 0.075 + K_app * C_L_req_app^2;
+D_app = 1/2 * rho .* V_app^2 * S_ref * C_D_app;
+
+SEROC_app = unitConvert(V_app * (T_wet - D_app) / (W*g), u.ft / u.min);     % This would benefit a lot from empty weight
+fprintf("The SEROC of approach is %.2f ft/min.\n", double(separateUnits(SEROC_app)))
 
 %% Task 7 Plot
 a_climb = asind(ul((T_dry * 2 - D)/(W*g)));
@@ -135,8 +158,8 @@ plot(ul(V_climb_range), a_climb, 'r')
 ylabel("Angle of climb in degrees",'Color','r')
 plot(max_a(2), max_a(1), 'LineStyle','none','Marker','.','MarkerSize',15, 'MarkerFaceColor','r')
 
-legend("Rate of climb", "Maximum ROC = "+real(max_ROC(1))+" m/s at Vy = "+real(max_ROC(2)*cosd(max_ROC(3))), ...
-    "Angle of climb", "Maximum AOC = "+real(max_a(1))+" degrees at Vx = "+real(max_a(2)*sind(max_a(1))), 'Location','best')
+legend("Rate of climb", "Maximum ROC = "+real(max_ROC(1))+" m/s at Vy = "+real(max_ROC(2)*cosd(max_ROC(3)))+" m/s", ...
+    "Angle of climb", "Maximum AOC = "+real(max_a(1))+" degrees at Vx = "+real(max_a(2)*sind(max_a(1)))+" m/s", 'Location','best')
 title("Aircraft climb performance at 10,000 ft")
 xlabel("Airspeed in m/s")
 
