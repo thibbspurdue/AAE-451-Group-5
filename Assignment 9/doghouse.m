@@ -18,6 +18,7 @@ function doghouse(C_L_max,S,C_D0,AR,W,Swp_w,t_c_w)
     %% Basic computation
     V = mach .* v_sound;    % Velocity ranging from mach 0.3 to 2.3 in metric units
     q = rho .* V.^2 / 2;    % Dynamic pressure for given V range
+    C_L_max = 1.5; % This change will be formally introduced to the parameters.copy (definite change), temporary fix for git convenience 
     L = 1/2 * rho .* V.^2 * S * C_L_max;    % Maximum lift for given V range
     R = [2500 4500 8000 13000] .* u.m;  % Turn radius in m
     K = K_find_matrix(mach,ul(AR),ul(Swp_w),ul(t_c_w),ul(W),ul(unitConvert(20000*u.ft,'SI')),ul(S));
