@@ -1,39 +1,64 @@
-function [] = Flight_envelope(AR, SWP_w, S, t_c_w, W, T_SL, C_D0, C_D0L)
+function [] = Flight_envelope(AR, SWP_w, S, t_c_w, W, T_SL, C_D0, C_D0L, C_L_max)
 %FLIGHT_ENVELOPE Summary of this function goes here
 %T_SL is the thrust available at sea level
+%u = symunit;
+function output = ul(input)
+    output = double(separateUnits(input));
+end
+
+%removing the units for all inputs
+%MAKE SURE THE UNITS ARE INPUT IN BASIC SI
+SWP_w = ul(SWP_w);
+S = ul(S);
+W = ul(W);
+T_SL = ul(T_SL);
+
+
 rho_SL = 1.225;
-nn = 100;
+nn = 50;
 
 M = linspace(0.1, 2.5, nn);
 
 %h = linspace(0, 60000, nn) * u.ft;
 %h = unitConvert(h, u.m);
-h = linspace(0, 18288, nn);
-
+%h = linspace(0, 18288, nn);
+h = linspace(0, 20000, nn);
 %The multiple contours graph
 
 N = [1 2 3 4 5 6 7 7.5];
 figure;
 hold on;
+colors = ['r', 'g', 'b', 'c', 'm', 'y', 'r', 'k'];   % assign diff colors
+
+k = 1;
 for n = N
-    Ps = Psss(n, C_D0);
-    contour(M, h, Ps.', [0 0]);
+    con(k) = Psss(n, C_D0, colors(k));
+    %contour(M, h, Ps', [0 0], 'Color', colors(k,:));
+    k = k + 1;
 end
+legend(con, {'n = 1','n = 2','n = 3','n = 4','n = 5','n = 6','n = 7','n = 7.5'})
 grid on;
-legend('n = 1', 'n = 2', 'n = 3', 'n = 4', 'n = 5', 'n = 6', 'n = 7', 'n = 7.5')
+xlabel("Mach number")
+ylabel("Altitude (m)")
+%legend('n = 1', 'n = 2', 'n = 3', 'n = 4', 'n = 5', 'n = 6', 'n = 7', 'n = 7.5')
 title('Sustained Flight Envelopes P_s = 0')
 
 %Clean versus unclean graphs
 figure;
-contour(M, h, Psss(n, C_D0));
+Psss(n, C_D0, 'green');
+grid on;
+%contour(M, h, Psss(n, C_D0)', [0,0], 'green');
 hold on;
-contour(M, h, Psss(n, C_D0L));
+Psss(n, C_D0L, 'red');
+%contour(M, h, Psss(n, C_D0L)', [0,0], 'red');
 legend("Clean", "Loaded")
+xlabel("Mach number")
+ylabel("Altitude (m)")
 title("Impact of External Stores on 1g flight envelope (Ps = 0)")
 
 %For a value of n, this generates the contour
 
-function Ps = Psss(n, cd0)
+function Ps = Psss(n, cd0, c)
     Ps = zeros(nn); %Ps(M,h)
     
     
@@ -42,19 +67,37 @@ function Ps = Psss(n, cd0)
             [~, a, ~, rho] = atmosisa(h(j));
             V = M(i) * a;
             q = 0.5 * rho * V^2;
+
+            %Stall line stuff
+            C_L = n*W / (q*S);
+            if C_L > C_L_max
+                Ps(i,j) = NaN;
+                continue
+            end
     
             %Get K and all that
             K = K_find(M(i),AR,SWP_w, t_c_w, W, h(j), S);
     
             %Thrust using thrust limit
-            T = T_SL * (rho / rho_SL) * (1 - 0.35 * M(i));
+            T = T_SL * (rho / rho_SL)^0.7 * (1 - 0.35*M(i));
     
             %Drag using definition of it
             D = cd0*q*S + n^2 * (K/q) * (W^2 / S);
     
-            Ps(i, j) = T - D;
+            Ps(i, j) = (T - D);
         end
     end
+    
+    Mstall = zeros(size(h));
+
+    for j = 1:length(h)
+        [~, a, ~, rho] = atmosisa(h(j));
+        Vstall = sqrt(2*n*W / (rho*S*C_L_max));
+        Mstall(j) = Vstall / a;
+    end
+    
+    plot(Mstall, h, 'Color', c);
+    [~, Ps] = contour(M, h, Ps', [0 0], 'Color', c);
 end
 
 %Makes K
