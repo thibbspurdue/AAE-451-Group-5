@@ -192,6 +192,7 @@ R = unitConvert(R, u.nmi);
 D = [R, 0];
 
 %Plotting
+figure;
 x = [A(1) B(1) C(1) D(1) 0];
 y = [A(2) B(2) C(2) D(2) 0];
 
