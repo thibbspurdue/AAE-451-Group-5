@@ -10,7 +10,7 @@ end
 %MAKE SURE THE UNITS ARE INPUT IN BASIC SI
 SWP_w = ul(SWP_w);
 S = ul(S);
-W = ul(W);
+W = ul(W * 9.81);
 T_SL = ul(T_SL);
 
 
@@ -26,17 +26,18 @@ h = linspace(0, 20000, nn);
 %The multiple contours graph
 
 N = [1 2 3 4 5 6 7 7.5];
+%N = 1;
 figure;
 hold on;
 colors = ['r', 'g', 'b', 'c', 'm', 'y', 'r', 'k'];   % assign diff colors
 
 k = 1;
 for n = N
-    con(k) = Psss(n, C_D0, colors(k));
+    Psss(n, C_D0, colors(k));
     %contour(M, h, Ps', [0 0], 'Color', colors(k,:));
     k = k + 1;
 end
-legend(con, {'n = 1','n = 2','n = 3','n = 4','n = 5','n = 6','n = 7','n = 7.5'})
+legend('n = 1','n = 2','n = 3','n = 4','n = 5','n = 6','n = 7','n = 7.5')
 grid on;
 xlabel("Mach number")
 ylabel("Altitude (m)")
@@ -96,8 +97,35 @@ function Ps = Psss(n, cd0, c)
         Mstall(j) = Vstall / a;
     end
     
-    plot(Mstall, h, 'Color', c);
-    [~, Ps] = contour(M, h, Ps', [0 0], 'Color', c);
+    %plot(Mstall, h, 'Color', c);
+    %[~, Ps] = contour(M, h, Ps', [0 0], 'Color', c);
+
+    % Get Ps = 0 contour
+    C = contour(M, h, Ps', [0 0]);
+
+    M_ps = C(1,2:end);
+    h_ps = C(2,2:end);
+    %Remove error values
+    mask = M_ps >= 0.1;
+
+    M_ps = M_ps(mask);
+    h_ps = h_ps(mask);
+    % Sort contour by mach
+    %[M_ps, order] = sort(M_ps);
+    %h_ps = h_ps(order);
+
+    %find the intersection point
+    %[i_stall, i_ps] = find(abs(M_ps(:)' - Mstall(:)) == min(abs(M_ps(:)' - Mstall(:))), 1);
+    %i_stall = i_stall - n;
+    [i_ps, i_stall] = find(abs(h_ps(:) - h(:)') == min(abs(h_ps(:) - h(:)')), 1);
+    %Machs = [Mstall(1:i_stall), M_ps(i_ps:end)];
+    %Heights = [h(1:i_stall), h_ps(i_ps:end)];
+
+    Machs = [M_ps(i_ps:end), flip(Mstall(1:i_stall))];
+    Heights = [h_ps(i_ps:end), flip(h(1:i_stall))];
+
+    plot(Machs, Heights, 'Color', c)
+    
 end
 
 %Makes K
