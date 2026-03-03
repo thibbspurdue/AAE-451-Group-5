@@ -76,7 +76,7 @@ function Ps = Psss(n, cd0, c)
             end
     
             %Get K and all that
-            K = K_find(M(i),AR,SWP_w, t_c_w, W, h(j), S);
+            K = K_find(M(i),AR,SWP_w, t_c_w, n*W, h(j), S);
     
             %Thrust using thrust limit
             T = T_SL * (rho / rho_SL)^0.7 * (1 - 0.35*M(i));
@@ -101,7 +101,7 @@ function Ps = Psss(n, cd0, c)
 end
 
 %Makes K
-function [K] = K_find(Mb,AR,SWP_w, t_c_w, W, hb, S)
+function [K] = K_find(Mb,AR,SWP_w, t_c_w, Wb, hb, S)
     %K Summary of this function goes here
     %   Detailed explanation goes here
     M_DW_peak = 1.25;         % Mach at peak CDW
@@ -112,7 +112,7 @@ function [K] = K_find(Mb,AR,SWP_w, t_c_w, W, hb, S)
     qb = 0.5 * rhob * Vb^2;
     
     %M thresholds
-    C_L = W / (qb*S);
+    C_L = Wb / (qb*S);
     
     M_DD = KA/cos(SWP_w) - t_c_w/(cos(SWP_w)^2) - C_L / (10 * (cos(SWP_w)^3));
     M_crit = M_DD - 0.08;
