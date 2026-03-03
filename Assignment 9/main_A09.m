@@ -40,8 +40,10 @@ QCS_vt = Swp_vt;
 S_ref = S;
 
 %% Variables needed for calculation (please alter this section later on)
-MTOW = 21410 * u.kg;
-W_E = 10479 * u.kg;%empty weight
+W_penalty = 0.20 * 10479 * u.kg; %adding a 20% weight penalty????
+
+MTOW = W_penalty + 21410 * u.kg;
+W_E =  W_penalty + 10479 * u.kg;%empty weight
 W_Fuel_Limit = 1.25*6298.5  * u.kg;%Assuming it is 25% more than intended may payload one
 W_payload = 10215* u.lbm; 
 W_payload = unitConvert(W_payload, u.kg);
