@@ -42,10 +42,10 @@ S_ref = S;
 %% Variables needed for calculation (please alter this section later on)
 MTOW = 21410 * u.kg;
 W_E = 10479 * u.kg;%empty weight
-W_Fuel_Limit = 6298.5  * u.kg;%we dont know this yet, def in kg
+W_Fuel_Limit = 1.25*6298.5  * u.kg;%Assuming it is 25% more than intended may payload one
 W_payload = 10215* u.lbm; 
 W_payload = unitConvert(W_payload, u.kg);
-V_Cruise = 400;%Need to find optimal cruising speed?
+V_Cruise = 400 * u.m/u.s;%Need to find optimal cruising speed?
 
 T_wet = 43000 * u.lbf;
 T_wet = unitConvert(T_wet, u.N); %wet thrust, one engine
@@ -58,10 +58,9 @@ Combat_L_D = 4.5;                  % Assignment 4
 Loiter_L_D = 11;                   % Assignment 4
 
 %dummy values used for testing the range
-% MTOW = 90000 * 0.45359237 * u.kg;
-% W_E = 50000* 0.45359237 * u.kg;%empty weight
-% W_Fuel_Limit = 35000* 0.45359237 * u.kg;%we dont know this yet, def in kg
-% V_Cruise = 400 * u.m/u.s;
+%MTOW = 90000 * 0.45359237 * u.kg;
+%W_E = 50000* 0.45359237 * u.kg;%empty weight
+%W_Fuel_Limit = 35000* 0.45359237 * u.kg;%we dont know this yet, def in kg
 %% Code iteration from previous assignments
 C_D0 = Drag_Complex(Q, l_f, d_f, l_N, d_N, QCS_w, QCS_ht, QCS_vt, t_c_w, t_c_ht, t_c_vt, c_bar, c_r, c_ht, c_vt, S_ref, S_w, S_t, S_v); 
 e = 4.61 * (1 - 0.045*AR^0.68) * (cos(Swp_w)^0.15) - 3.1;
