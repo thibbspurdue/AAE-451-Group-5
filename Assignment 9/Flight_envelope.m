@@ -45,11 +45,11 @@ title('Sustained Flight Envelopes P_s = 0')
 
 %Clean versus unclean graphs
 figure;
-Psss(n, C_D0, 'green');
+Psss(1, C_D0, 'green');
 grid on;
 %contour(M, h, Psss(n, C_D0)', [0,0], 'green');
 hold on;
-Psss(n, C_D0L, 'red');
+Psss(1, C_D0L, 'red');
 %contour(M, h, Psss(n, C_D0L)', [0,0], 'red');
 legend("Clean", "Loaded")
 xlabel("Mach number")

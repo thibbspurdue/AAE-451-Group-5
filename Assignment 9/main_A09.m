@@ -75,7 +75,7 @@ doghouse(C_L_max,S,C_D0,AR,W,Swp_w,t_c_w)
 %% Task 3 + 4. Flight Envelope and Specific Excess Power
 %C_D0L is the 0 Lift Coefficent of Drag when th eplane is loaded
 C_D0L = C_D0; %Assuming everything is stored inside the aircraft
-Flight_envelope(AR, Swp_w, S, t_c_w, W, 2 * T_dry, C_D0, C_D0L, C_L_max);
+Flight_envelope(AR, Swp_w, S, t_c_w, MTOW, 2 * T_dry, C_D0, C_D0L, C_L_max);
 
 %% Task 5. Carrier Landing and Arrestment
 app_coef = 1.1; % range from 1.1 ~ 1.15
