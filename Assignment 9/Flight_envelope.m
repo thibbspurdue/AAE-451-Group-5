@@ -99,32 +99,74 @@ function Ps = Psss(n, cd0, c)
     
     %plot(Mstall, h, 'Color', c);
     %[~, Ps] = contour(M, h, Ps', [0 0], 'Color', c);
+    if(n == 1)
+        plot(Mstall, h, 'Color', c, 'HandleVisibility', 'off');
+        contour(M, h, Ps', [0 0], 'Color', c);
+    else
+        % Get Ps = 0 contour
+        C = contourc(M, h, Ps', [0 0]);
+    
+        M_ps = C(1,2:end);
+        h_ps = C(2,2:end);
+        %Remove error values
+        mask = M_ps >= 0.1;
+    
+        M_ps = M_ps(mask);
+        h_ps = h_ps(mask);
+        % Sort contour by mach
+        %[M_ps, order] = sort(M_ps);
+        %h_ps = h_ps(order);
+    
+        %find the intersection point
+        %[i_stall, i_ps] = find(abs(M_ps(:)' - Mstall(:)) == min(abs(M_ps(:)' - Mstall(:))), 1);
+        %i_stall = i_stall - n;
+        M_ppps = h_ps*0;
+        for j = 1:length(h_ps)
+            [~, a, ~, rho] = atmosisa(h_ps(j));
+            Vstall = sqrt(2*n*W / (rho*S*C_L_max));
+            M_ppps(j) = Vstall / a;
+        end
+        [i_ps, ~] = find(abs(M_ps(:) - M_ppps(:)) == min(abs(M_ps(:) - M_ppps(:))), 1);
 
-    % Get Ps = 0 contour
-    C = contour(M, h, Ps', [0 0]);
+        %Machs = [Mstall(1:i_stall), M_ps(i_ps:end)];
+        %Heights = [h(1:i_stall), h_ps(i_ps:end)];
 
-    M_ps = C(1,2:end);
-    h_ps = C(2,2:end);
-    %Remove error values
-    mask = M_ps >= 0.1;
-
-    M_ps = M_ps(mask);
-    h_ps = h_ps(mask);
-    % Sort contour by mach
-    %[M_ps, order] = sort(M_ps);
-    %h_ps = h_ps(order);
-
-    %find the intersection point
-    %[i_stall, i_ps] = find(abs(M_ps(:)' - Mstall(:)) == min(abs(M_ps(:)' - Mstall(:))), 1);
-    %i_stall = i_stall - n;
-    [i_ps, i_stall] = find(abs(h_ps(:) - h(:)') == min(abs(h_ps(:) - h(:)')), 1);
-    %Machs = [Mstall(1:i_stall), M_ps(i_ps:end)];
-    %Heights = [h(1:i_stall), h_ps(i_ps:end)];
-
-    Machs = [M_ps(i_ps:end), flip(Mstall(1:i_stall))];
-    Heights = [h_ps(i_ps:end), flip(h(1:i_stall))];
-
-    plot(Machs, Heights, 'Color', c)
+        h_stall = linspace(0, h_ps(i_ps), nn);
+        M_stall = 0*h_stall;
+        for j = 1:length(h_stall)
+            [~, a, ~, rho] = atmosisa(h_stall(j));
+            Vstall = sqrt(2*n*W / (rho*S*C_L_max));
+            M_stall(j) = Vstall / a;
+        end
+        Machs = [M_stall, M_ps(i_ps:end)];
+        Heights = [h_stall, h_ps(i_ps:end)];
+        %Machs = [Mstall(1:i_stall), M_ps(i_ps:end)];
+        %Heights = [h(1:i_stall), h_ps(i_ps:end)];
+        %Machs = [M_stall, M_ps];
+        %Heights = [h_stall, h_ps];
+        %Machs = [M_ps, flip(M_stall)];
+        %Heights = [h_ps, flip(h_stall)];
+        %Machs = [M_ps(i_ps:end), flip(Mstall(1:i_stall))];
+        %Heights = [h_ps(i_ps:end), flip(h(1:i_stall))];
+        % Find closest intersection between the curves
+        % D = hypot(M_ps(:) - M_stall(:)', h_ps(:) - h_stall(:)');  % distance matrix
+        % [~, idx] = min(D(:));
+        % [i_ps, i_stall] = ind2sub(size(D), idx);
+        %i_ps = i_ps - 1;
+        %i_stall = i_stall - 1;
+        % Trim curves at intersection
+        % M_ps_trim = M_ps(1:i_ps);
+        % h_ps_trim = h_ps(1:i_ps);
+        % 
+        % M_stall_trim = M_stall(1:i_stall);
+        % h_stall_trim = h_stall(1:i_stall);
+        % 
+        % Create envelope vectors
+        %Machs   = [M_ps_trim, fliplr(M_stall_trim)];
+        %Heights = [h_ps_trim, fliplr(h_stall_trim)];
+        
+        plot(Machs, Heights, 'Color', c)
+    end
     
 end
 
