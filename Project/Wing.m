@@ -3,133 +3,176 @@ classdef Wing < Component
     % Subclass of Component class.
 
     properties
-        interference_factor = 1
-        mass = 0
-        wingspan = 0
-        aspect_ratio = 0
-        thickness_chord_ratio = 1
-        chord_root = 0
-        chord_tip = 0
-        LE_sweep = 0 % leading edge sweep
-        QC_sweep = 0 % quarter chord sweep
-        MC_sweep = 0 % midchord sweep
-    end
+        wingspan = 0                % Wingspan
+        aspect_ratio = 0            % Aspect ratio, AR = b^2 / S_ref
+        thickness_chord_ratio = 0   % Maximum thickness/chord
+        reference_area              % Reference area, including overlap with fuselage and nacelles
+        root_chord = 0              % Root chord length at centre of aircraft (in fuselage)
+        leading_edge_sweep = 0      % Leading edge sweep
+    end % properties
 
     properties (Dependent)
-        reference_area
-        wetted_area
-        mean_chord
-        oswald_eff
-    end
+        half_span
+        mean_chord                  % Mean chord length
+        oswald_eff                  % Oswald efficiency factor
+        tip_chord                   % Tip chord length
+        quarter_chord_sweep         % Angle of quarter chord line
+        mid_chord_sweep             % Angle of midchord line
+        trailing_edge_sweep         % Angle of trailing edge
+    end % dependent properties
     
-    methods (Access = public)
-        function obj = Wing(wingspan, aspect_ratio, thickness_chord_ratio, chord_root, chord_tip, interference_factor, options)
+    methods
+        function obj = Wing(o)
             % WING Construct a Wing object for drag analysis.
             % Wing root chord defined at centre of aircraft, not at
             % wing-fuselage interface.
             arguments
-                wingspan
-                aspect_ratio
-                thickness_chord_ratio
-                chord_root 
-                chord_tip 
-                interference_factor = 1
-                options.?Wing
+                o.?Wing
             end
 
-            if nargin == 0
-                return
+            if nargin > 0
+                for field = fieldnames(args)
+                    obj.(field) = args.(ul(field));
+                end
+
+                if obj.aspect_ratio == 0
+                    if obj.wingspan ~= 0 && obj.reference_area ~= 0
+                        obj.aspect_ratio = obj.wingspan^2 / obj.reference_area;
+                    else
+                        error("Either aspect ratio or reference area and wingspan required")
+                    end
+                end
             end
+        end % constructor
 
-            obj@Component(interference_factor)
-            obj.wingspan = ul(wingspan);
-            obj.aspect_ratio = aspect_ratio;
-            obj.thickness_chord_ratio = thickness_chord_ratio;
-            obj.chord_root = ul(chord_root);
-            obj.chord_tip = ul(chord_tip);
-            obj.interference_factor = interference_factor;
+        function planform_area = planform_area(obj, fuselage)
+            % Calculates planform area by removing fuselage overlap
+            arguments
+                obj 
+                fuselage 
+            end
+            overlap_distance = fuselage.diameter / obj.length;
+            overlap_area = overlap_distance * (overlap_distance * (obj.root_chord - obj.tip_chord) + obj.root_chord) / 2;
+            planform_area = obj.reference_area - overlap_area;
+        end
 
-            set(obj, ul(options))
+        function area = wetted_area_slides(~, planform_area)
+            % Calculates wetted area using equation from week 3 slide 14.
+            arguments
+                ~ 
+                planform_area 
+            end
+            area = planform_area * 2 * 1.02;
+        end
+
+        function area = wetted_area_raymer(obj, planform_area)
+            % Calcuates wetted area using Raymer eqns. 7.11 and 7.12.
+            arguments
+                obj 
+                planform_area 
+            end
+            if obj.thickness_chord_ratio < 0.05
+                area = planform_area * 2.003;
+            else
+                area =  planform_area * (1.977 + 0.52 * obj.thickness_chord_ratio);
+            end
         end
 
         function form_factor = calc_form_factor(obj, mach_number)
+            arguments
+                obj 
+                mach_number 
+            end
             form_factor = 1 + calc_sweep_correction(obj, mach_number) * obj.thickness_chord_ratio + 100 * obj.thickness_chord_ratio^4;
         end
 
         function sweep_correction = calc_sweep_correction(obj, mach_number)
-            sweep_correction = (2 - mach_number^2) * cos(obj.QC_sweep) / sqrt(1 - (mach_number * cos(obj.QC_sweep))^2);
+            arguments
+                obj 
+                mach_number 
+            end
+            sweep_correction = (2 - mach_number^2) * cos(obj.quarter_chord_sweep) / sqrt(1 - (mach_number * cos(obj.quarter_chord_sweep))^2);
         end
 
-        function output = calc_cd0(obj, altitude, mach_number, velocity)
+        function output = calc_cd0(obj, altitude, airspeed)
             % CALC_CD0 Calculates and returns parasitic drag of component.
             % Requires either Mach number or velocity, using Mach number if
             % both are provided.
             arguments
-                obj
+                obj Component
                 altitude {mustBePositive}
-                mach_number {mustBePositive} = 0
-                velocity = 0
+                airspeed.mach_number = 0
+                airspeed.velocity = 0
             end
 
-            [altitude, velocity] = ul([altitude velocity]);
-            if mach_number == 0 && velocity == 0
-                error("Must input either velocity or Mach number")
-            elseif mach_number == 0
-                mach_number = velocity / Atm.sonic_speed(altitude);
+            altitude = ul(altitude);
+            airspeed.velocity = ul(airspeed.velocity);
+
+            if airspeed.velocity == 0
+                if airspeed.mach_number == 0
+                    error("Mach number or velocity required")
+                else
+                    airspeed.velocity = Atm.mach_to_v(altitude, airspeed.mach_number);
+                end
             else
-                velocity = mach_number * Atm.sonic_speed(altitude);
+                if abs(mach_number - Atm.v_to_mach(altitude, airspeed.velocity)) / airspeed.mach_number > 0.01
+                    error("Conflicting Mach number and velocity provided (> 1% difference)\n")
+                end
             end
 
-            form_factor = obj.calc_form_factor(mach_number);
-            reynolds_number = calc_reynolds_number(obj.mean_chord, altitude, velocity);
-            skin_friction_factor = calc_skin_friction_factor(reynolds_number);
+            form_factor = obj.calc_form_factor(airspeed.mach_number);
             
-            output = form_factor * obj.interference_factor * skin_friction_factor * obj.wetted_area / obj.reference_area;
+            output = obj.calc_cd0(altitude, obj.reference_area, form_factor, obj.mean_chord, "velocity", airspeed.velocity);
+        end
+
+        function angle = calc_chord_sweep(obj, x)
+            arguments
+                obj 
+                x {mustBeBetween(x, 0, 1)}
+            end
+            x_1 = obj.root_chord / x;
+            x_2 = obj.half_span * tan(obj.leading_edge_sweep) + obj.tip_chord / x;
+            angle = atan2(obj.half_span, x_1 - x_2);
         end
 
         function drag_factor = calc_induced_drag_factor(obj, mach_number)
             arguments
                 obj
-                mach_number 
+                mach_number
             end
-            
-    end
-
-    methods
-        function area = get.reference_area(obj)
-            area = obj.wingspan^2 / obj.aspect_ratio;
+            drag_factor = 1 / (pi * obj.aspect_ratio * obj.oswald_eff * (1 - mach_number^2)^0.5);
         end
 
-        % function area = get.wetted_area(obj)
-        % % Calculates and sets wetted area when given a
-        % % reference Fuselage object to determine overlapping planform area.
-        % % Uses equation from week 3 slide 14.
-        %     overlap_distance = fuselage.diameter / obj.length;
-        %     overlap_area = overlap_distance * (overlap_distance * (obj.chord_root - obj.chord_tip) + obj.chord_root) / 2;
-        %     area = (obj.reference_area - overlap_area) * 2 * 1.02;
-        % end
+    end % methods
 
-        function area = get.wetted_area(obj)
-        % Calcuates and sets wetted area when given a
-        % reference Fuselage object to determine overlapping planform area.
-        % Uses Raymer eqns. 7.11 and 7.12.
-            overlap_distance = fuselage.diameter / obj.length;
-            overlap_area = overlap_distance * (overlap_distance * (obj.chord_root - obj.chord_tip) + obj.chord_root) / 2;
-            exposed_area = obj.reference_area - overlap_area;
-            if obj.thickness_chord_ratio < 0.05
-                area = exposed_area * 2.003;
-            else
-                area =  exposed_area * (1.977 + 0.52 * obj.thickness_chord_ratio);
-            end
+    methods
+        function span = get.half_span(obj)
+            span = obj.wingspan / 2;
         end
 
         function output = get.mean_chord(obj)
-            output = (obj.chord_root + obj.chord_tip) / 2;
+            output = (obj.root_chord + obj.tip_chord) / 2;
         end
 
         function output = get.oswald_eff(obj)
-            output = 4.61 * (1 - 0.045 * obj.aspect_ratio^0.68) * (cos(obj.LE_sweep)^0.15) - 3.1; % Raymer eq. 12.49
+            output = 4.61 * (1 - 0.045 * obj.aspect_ratio^0.68) * (cos(obj.leading_edge_sweep)^0.15) - 3.1; % Raymer eq. 12.49
         end
-    end
+
+        function chord = get.tip_chord(obj)
+            chord = 2 * obj.mean_chord - obj.chord_root;
+        end
+
+        function angle = get.quarter_chord_sweep(obj)
+            angle = obj.calc_chord_sweep(0.25);
+        end
+
+        function angle = get.mid_chord_sweep(obj)
+            angle = obj.calc_chord_sweep(0.5);
+        end
+
+        function angle = get.trailing_edge_sweep(obj)
+            angle = obj.calc_chord_angle(1);
+        end
+    end % getter methods
 end
 

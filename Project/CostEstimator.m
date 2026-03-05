@@ -7,12 +7,14 @@ classdef CostEstimator
         tooling_rate = 118;
         manufacturing_rate = 98;
         quality_control_rate = 108;
+        avionics_cost = 18000; % USD/kg, Raymer 18.4.2
+        wrap_rates = [CostEstimator.engineering_rate; CostEstimator.tooling_rate; CostEstimator.manufacturing_rate; CostEstimator.quality_control_rate];
         inflation = 324.122 / 229.594; % 2026 CPI / 2012 CPI
-        output_string = "Program DCPR Cost, adjusted to 2026 Dollars: $%.2f\n"
+        output_string = "Program DCPR Cost, adjusted to 2026 USD: $%.2f\n"
     end
 
     methods (Static)
-        function cost = cost_raymer(empty_weight, max_velocity, prod_qty, test_qty)
+        function test_cost = cost_raymer(empty_weight, max_velocity, test_qty, prod_qty, engine_cost, avionics_weight, learning_curve)
             % HOURS_RAYMER Implements DCPR cost estimating
             % relationships (CERs) from Raymer Ch. 18. Excludes the engine,
             % avionics, payload, etc.
@@ -22,28 +24,51 @@ classdef CostEstimator
             arguments
                 empty_weight % kg if no units specified
                 max_velocity % m/s if no units specified
-                prod_qty % 5-year production quantity
-                test_qty % Number of test flight aircraft (typ. 2-6)
+                test_qty % Number of test flight aircraft/initial batch size
+                prod_qty % Total production quantity within 5 years, excluding test aircraft
+                engine_cost % Total engine cost per aircraft, 2026 USD
+                avionics_weight % Total avionics weight
+                learning_curve = 0.85; % assume default curve of 85%
             end
             empty_weight = ul(empty_weight);
-            params = [ul(empty_weight) 3.6 * ul(max_velocity) prod_qty]; % DAPCA uses km/h
+            avionics_weight = ul(avionics_weight);
+            params = [ul(empty_weight) 3.6 * ul(max_velocity) test_qty]; % DAPCA uses km/h
+
+            test_hours = CostEstimator.hours_raymer(params);
+            params(end) = prod_qty + test_qty;
+            prod_hours = CostEstimator.hours_raymer(params) - test_hours;
+            prod_hours = (((prod_qty + test_qty)/ test_qty)^(1 + log2(learning_curve)) - 1) / (1 + log2(learning_curve)) / ((prod_qty + test_qty)/ test_qty - 1) * prod_hours;
         
             % Numbers referenced from RAND Corporation DAPCA IV model
-            hours.engineering = 5.18 * prod(params.^[0.777 0.894 0.163]);
-            hours.tooling = 7.22 * prod(params.^[0.777 0.696 0.263]);
-            hours.manufacturing = 10.5 * prod(params.^[0.82 0.484 0.641]);
-            hours.quality_control = 0.133 * hours.manufacturing; % 0.076 if cargo aircraft
+            test_cost = [test_hours .* CostEstimator.wrap_rates; % engineering, tooling, manufacturing, and QC
+                         31.2 * empty_weight^0.921 * max_velocity^0.621 * test_qty^0.799; % program test manufacturing materials cost
+                         test_qty * avionics_weight * CostEstimator.avionics_cost; % engine and avionics cost
+                         1947 * empty_weight^0.325 * max_velocity^0.822 * test_qty^1.21]; % test flight cost
+            
+            prod_cost = [prod_hours .* CostEstimator.wrap_rates; % engineering, tooling, manufacturing, and QC
+                         prod_qty * avionics_weight * CostEstimator.avionics_cost; % engine and avionics cost
+                         31.2 * empty_weight^0.921 * max_velocity^0.621 * prod_qty^0.799]; % program production manufacturing materials cost
+            
+            test_cost = test_cost * CostEstimator.inflation;
+            prod_cost = prod_cost * CostEstimator.inflation;
+            test_cost = [test_cost; test_qty * engine_cost]
+            prod_cost = [prod_cost; prod_qty * engine_cost]
+            test_cost = sum(test_cost);
+            prod_cost = sum(prod_cost);
 
-            cost = hours.engineering * CostEstimator.engineering_rate + ...
-                   hours.tooling * CostEstimator.tooling_rate + ...
-                   hours.manufacturing * CostEstimator.manufacturing_rate + ...
-                   hours.quality_control * CostEstimator.quality_control_rate + ...
-                   1947 * empty_weight^0.325 * max_velocity^0.822 * test_qty^1.21 + ... % test flight cost
-                   31.2 * empty_weight^0.921 * max_velocity^0.621 * prod_qty^0.799; % manufacturing materials cost
+            total_cost = prod_cost + test_cost(end);
+            fprintf("Test program AUFC, adjusted to 2026 USD, %s (total %s)\n", CostEstimator.format_c(test_cost / test_qty), CostEstimator.format_c(test_cost))
+            fprintf("Production AUFC, adjusted to 2026 USD, %s (total %s)\n", CostEstimator.format_c(total_cost / prod_qty), CostEstimator.format_c(total_cost));
+            fprintf("With spares: %s (+%s) total, %s (%s) ea\n", CostEstimator.format_c(total_cost * 1.1), CostEstimator.format_c(total_cost * 0.1), CostEstimator.format_c(total_cost * 1.1 / prod_qty), CostEstimator.format_c(total_cost * 0.1 / prod_qty));
+        end % cost_raymer
 
-            cost = cost * CostEstimator.inflation; % Adjust cost for inflation
-            fprintf(CostEstimator.output_string, cost);
-        end % hours_raymer
+        function hours = hours_raymer(params)
+            % Numbers referenced from RAND Corporation DAPCA IV model
+            hours = [5.18 * prod(params.^[0.777 0.894 0.163]) % engineering hours
+                     7.22 * prod(params.^[0.777 0.696 0.263]); % tooling hours
+                     10.5 * prod(params.^[0.82 0.484 0.641])]; % manufacturing hours
+            hours(4) = 0.133 * hours(3); % QC hours, 0.076 if cargo aircraft
+        end
     
         function cost = cost_alromaihi_weight(empty_weight)
             % HOURS_ALROMAIHI Implements DCPR cost estimating relationships
@@ -70,7 +95,7 @@ classdef CostEstimator
                
             cost = cost * CostEstimator.inflation; % Adjust cost for inflation
             fprintf(CostEstimator.output_string, cost);
-        end % hours_alromaihi
+        end % cost_alromaihi_weight
 
         function cost = cost_alromaihi_partsize(empty_weight)
             % HOURS_ALROMAIHI Implements DCPR cost estimating relationships
@@ -101,6 +126,12 @@ classdef CostEstimator
                
             cost = cost * CostEstimator.inflation; % Adjust cost for inflation
             fprintf(CostEstimator.output_string, cost);
-        end % hours_alromaihi
+        end % cost_alromaihi_partsize
+
+        function output = format_c(value)
+            locale = java.util.Locale.US;
+            currency_format = java.text.NumberFormat.getCurrencyInstance(locale);
+            output = currency_format.format(value);
+        end
     end
 end

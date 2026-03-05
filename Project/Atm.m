@@ -26,5 +26,13 @@ classdef Atm
         function mu = viscosity_dyn(altitude)
             [~, ~, ~, ~, ~, mu] = atmosisa(ul(altitude));
         end
+
+        function velocity = mach_to_v(altitude, mach_number)
+            velocity = ul(Atm.sonic_speed(ul(altitude))) * mach_number;
+        end
+
+        function mach_number = v_to_mach(altitude, velocity)
+            mach_number = ul(velocity) / Atm.sonic_speed(ul(altitude));
+        end
     end
 end

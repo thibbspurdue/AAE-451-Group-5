@@ -1,7 +1,8 @@
-function output = ul(input, units)
+function output = ul(input, units, preserve_units)
 arguments
     input
     units = 'SI'
+    preserve_units = false
 end
 % UL Removes units from a symbolic variable and returns the unitless
 % expression as a double. Returns the unmodified argument if no units are
@@ -11,10 +12,15 @@ end
     if ~isa(input, 'sym')
         output = input;
     else
-        if ismember(unitType, ['SI', 'CGS', 'US', 'ESU', 'GU', 'EMU'])
-            output = double(separateUnits(simplify(unitConvert(input, units, 'Derived'))));
+        [input_magnitude, input_units] = separateUnits(input);
+        if ismember(units, ['SI', 'CGS', 'US', 'ESU', 'GU', 'EMU'])
+            output = simplify(unitConvert(input_units, units, 'Derived'));
         else
-            output = double(separateUnits(simplify(UnitConvert(input, units))));
+            output = simplify(UnitConvert(input_units, unit));
+        end
+        output = output * input_magnitude;
+        if ~preserve_units
+            output = double(separateUnits(output));
         end
     end
 end
