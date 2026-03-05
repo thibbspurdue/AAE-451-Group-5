@@ -1,4 +1,8 @@
-function output = ul(input)
+function output = ul(input, unitType)
+arguments
+    input
+    unitType = 'SI'
+end
 % UL Removes units from a symbolic variable and returns the unitless
 % expression as a double. Returns the unmodified argument if no units are
 % attached.
@@ -7,6 +11,6 @@ function output = ul(input)
     if ~isa(input, 'sym')
         output = input;
     else
-        output = double(separateUnits(simplify(unitConvert(input, 'SI', 'Derived'))));
+        output = double(separateUnits(simplify(unitConvert(input, unitType, 'Derived'))));
     end
 end
