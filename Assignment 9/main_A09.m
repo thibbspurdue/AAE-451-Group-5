@@ -40,14 +40,13 @@ QCS_vt = Swp_vt;
 S_ref = S;
 
 %% Variables needed for calculation (please alter this section later on)
-W_penalty = 0.20 * 10479 * u.kg; %adding a 20% weight penalty????
-
-MTOW = W_penalty + 21410 * u.kg;
-W_E =  W_penalty + 10479 * u.kg;%empty weight
-W_Fuel_Limit = 1.25*6298.5  * u.kg;%Assuming it is 25% more than intended may payload one
-W_payload = 10215* u.lbm; 
+MTOW = 50989 * 0.45359237 * u.kg;
+W_E =  0.5765 * MTOW;%empty weight
+W_Fuel_Limit = 1.125 * 0.3210 * MTOW;%Assuming it is 25% more than intended may payload one
+W_payload = 5227* u.lbm; 
 W_payload = unitConvert(W_payload, u.kg);
-V_Cruise = 400 * u.m/u.s;%Need to find optimal cruising speed?
+V_Cruise = 0.9 * 323 * u.m/u.s;%Need to find optimal cruising speed?
+%V_Cruise = 400 * u.m/u.s;
 
 T_wet = 43000 * u.lbf;
 T_wet = unitConvert(T_wet, u.N); %wet thrust, one engine
@@ -55,9 +54,9 @@ T_wet = unitConvert(T_wet, u.N); %wet thrust, one engine
 T_dry = 28000 * u.lbf;
 T_dry = unitConvert(T_dry, u.N); %wet thrust, one engine
 
-Cruise_L_D = 9.2;                  % Assignment 4
+Cruise_L_D = 9;                  % Assignment 6
 Combat_L_D = 4.5;                  % Assignment 4
-Loiter_L_D = 11;                   % Assignment 4
+Loiter_L_D = 9;                   % Assignment 6
 
 %dummy values used for testing the range
 %MTOW = 90000 * 0.45359237 * u.kg;
@@ -77,7 +76,7 @@ doghouse(C_L_max,S,C_D0,AR,W,Swp_w,t_c_w)
 %% Task 3 + 4. Flight Envelope and Specific Excess Power
 %C_D0L is the 0 Lift Coefficent of Drag when th eplane is loaded
 C_D0L = C_D0; %Assuming everything is stored inside the aircraft
-Flight_envelope(AR, Swp_w, S, t_c_w, MTOW, 2 * T_dry, C_D0, C_D0L, C_L_max);
+Flight_envelope(AR, Swp_w, S, t_c_w, MTOW, 2 * T_wet, C_D0, C_D0L, C_L_max);
 
 %% Task 5. Carrier Landing and Arrestment
 app_coef = 1.1; % range from 1.1 ~ 1.15
@@ -87,7 +86,7 @@ L_s = 344 * u.ft;
 V_stall = sqrt(2*W*g/(Atm.density(0*u.ft)*u.kg/u.m^3*S*C_L_max));
 V_app = app_coef * V_stall;
 V_eng = unitConvert(1.05 * V_app - V_wod, u.knot);
-V_eng_range = linspace(100,180).*u.knot; 
+V_eng_range = linspace(80,180).*u.knot; 
 %k_E_eng = 1/2*unitConvert(W,'US')*V_eng^2;
 C2 = 40000 * u.lbf * (145 * u.knot)^2; 
 W_arrest_limit = C2 ./ (V_eng_range.^2);
@@ -171,25 +170,29 @@ title("Aircraft climb performance at 10,000 ft")
 xlabel("Airspeed in m/s")
 
 %% Task 8. Payload-Range Envelope
+%Add weight penalty
+W_penalty = W_E * 0; %adding a 10% weight penalty????
+
 %Point definition [range, payload_weight]
+r_units = u.nmi;
 
 %A is range 0, max payload
 A = [0, W_payload];
 
 %B is max payload, corresponding range
-R = Range(W_payload, W_E, MTOW, V_Cruise, Cruise_L_D, Combat_L_D, Loiter_L_D);
-R = unitConvert(R, u.nmi);
+R = Range(W_payload, W_E + W_penalty, MTOW + W_penalty, V_Cruise, Cruise_L_D, Combat_L_D, Loiter_L_D);
+R = unitConvert(R, r_units);
 B = [R, W_payload];
 
 %C is still MTOW, but hits the fuel limit
 W_p = MTOW - W_E - W_Fuel_Limit;
-R = Range(W_p, W_E, MTOW, V_Cruise, Cruise_L_D, Combat_L_D, Loiter_L_D);
-R = unitConvert(R, u.nmi);
+R = Range(W_p, W_E + W_penalty, MTOW + W_penalty, V_Cruise, Cruise_L_D, Combat_L_D, Loiter_L_D);
+R = unitConvert(R, r_units);
 C = [R, W_p];
 
 %D is at 0 payload with the fuel limit
-R = Range(0, W_E, W_E + W_Fuel_Limit, V_Cruise, Cruise_L_D, Combat_L_D, Loiter_L_D);
-R = unitConvert(R, u.nmi);
+R = Range(0, W_E + W_penalty, W_E + W_penalty + W_Fuel_Limit, V_Cruise, Cruise_L_D, Combat_L_D, Loiter_L_D);
+R = unitConvert(R, r_units);
 D = [R, 0];
 
 %Plotting
@@ -203,9 +206,9 @@ y = ul(y);
 x_max = round(1.25*x(4), 1, 'significant');
 y_max = round(1.25*y(1), 1, 'significant');
 
-fill(x, y, [0.2 0.6 0.9]);
+fill(x, y, 'b', 'FaceAlpha',0.3);
 xlabel('Range [nmi]');
 ylabel('Payload weight [kg]');
 xlim([0 x_max]); ylim([0 y_max]);
 grid on;
-title("Payload-Range Diagram")
+title("Breguet Payload-Range Envelope")

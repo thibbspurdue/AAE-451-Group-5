@@ -54,7 +54,7 @@ Psss(1, C_D0L, 'red');
 %contour(M, h, Psss(n, C_D0L)', [0,0], 'red');
 legend("Clean", "Loaded")
 xlabel("Mach number")
-ylabel("Altitude (m)")
+ylabel("Altitude (ft)")
 title("Impact of External Stores on 1g flight envelope (Ps = 0)")
 
 %For a value of n, this generates the contour
@@ -100,8 +100,8 @@ function Ps = Psss(n, cd0, c)
     %plot(Mstall, h, 'Color', c);
     %[~, Ps] = contour(M, h, Ps', [0 0], 'Color', c);
     if(n == 1)
-        plot(Mstall, h, 'Color', c, 'HandleVisibility', 'off');
-        contour(M, h, Ps', [0 0], 'Color', c);
+        plot(Mstall, h* 3.2808399, 'Color', c, 'HandleVisibility', 'off');
+        contour(M, h* 3.2808399, Ps', [0 0], 'Color', c);
     else
         % Get Ps = 0 contour
         C = contourc(M, h, Ps', [0 0]);
@@ -165,6 +165,7 @@ function Ps = Psss(n, cd0, c)
         %Machs   = [M_ps_trim, fliplr(M_stall_trim)];
         %Heights = [h_ps_trim, fliplr(h_stall_trim)];
         
+        Heights = Heights * 3.2808399; %make it into feet
         plot(Machs, Heights, 'Color', c)
     end
     
