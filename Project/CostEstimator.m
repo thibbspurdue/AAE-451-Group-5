@@ -51,8 +51,8 @@ classdef CostEstimator
             
             test_cost = test_cost * CostEstimator.inflation;
             prod_cost = prod_cost * CostEstimator.inflation;
-            test_cost = [test_cost; test_qty * engine_cost]
-            prod_cost = [prod_cost; prod_qty * engine_cost]
+            test_cost = [test_cost; test_qty * engine_cost];
+            prod_cost = [prod_cost; prod_qty * engine_cost];
             test_cost = sum(test_cost);
             prod_cost = sum(prod_cost);
 
