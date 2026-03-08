@@ -88,8 +88,7 @@ function mass_estimate = Assignment_3()
             W0 = (W_crew + W_payload) / (1 - Wf_W0 - We_W0);
             W0_history(iter) = W0;
         end
-    end
-    
+    end 
     u = symunit;
     mass_estimate = ul(W0 * u.lbm);
 end

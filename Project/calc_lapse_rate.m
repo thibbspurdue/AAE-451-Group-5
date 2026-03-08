@@ -14,7 +14,11 @@ function alpha = calc_lapse_rate(altitude, mach_number, throttle_ratio, engine_c
         engine_configuration {mustBeInteger, mustBeInRange(engine_configuration, 1, 6)}
     end
 
-    altitude = ul(altitude);
+    tempunits = symunit;
+    if has_units(altitude)
+        altitude = ul(unitConvert(altitude, tempunits.m));
+    end
+
     assert(length(altitude) == length(mach_number), 'Invalid altitude/Mach number inputs')
 
     % Convert possibly scalar inputs into arrays
@@ -26,10 +30,13 @@ function alpha = calc_lapse_rate(altitude, mach_number, throttle_ratio, engine_c
     end
 
     gamma = 1.4; % air heat capacity ratio, assumed constant, ul
+    [t_sl, ~, p_sl] = atmosisa(0); % sea level conditions, speed of sound unneeded
+    [t, ~, p] = atmosisa(altitude);
+
     alpha = zeros(length(altitude));
     for i = 1:length(altitude)
-        theta_0 = Atm.temp(altitude) / Atm.temp(0) * (1 + ((gamma - 1) / 2) * mach_number^2);
-        delta_0 = Atm.pressure(altitude) / Atm.pressure(0) * (1 + ((gamma - 1) / 2) * mach_number^2)^(gamma / (gamma - 1));
+        theta_0 = t / t_sl * (1 + ((gamma - 1) / 2) * mach_number^2);
+        delta_0 = p / p_sl * (1 + ((gamma - 1) / 2) * mach_number^2)^(gamma / (gamma - 1));
 
         % M_0_break = sqrt(2 ./ (gamma - 1) .* (theta_0_break - 1)); % Mach # ASL at which theta break is reached, Mattingly eq. D.7
         switch engine_configuration(i)

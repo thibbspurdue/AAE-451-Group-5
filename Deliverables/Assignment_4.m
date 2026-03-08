@@ -1,24 +1,15 @@
 % AAE 451 
 % Assignment 4
 
+%% Variable definitions
+
 %% Aircraft Dependent Parameters
 % Weight and Geometry
-W = Assignment_3();         % Weight, From Assignment 3
-
-%% Inputs
-u = symunit;
-
-% Wing geometry
-wingspan = 60 * u.ft;
-wing_sweep = 33.8 * u.deg;
-wing_planform = 1082 * u.ft^2;
-wing_root
-
-
+W = 94000;                  % Weight, From Assignment 3
 AR = 4;                     % Aspect Ratio
 
 %% Fixed Parameters
-KA = 0.95;                  % Technology factor, Gundlach Ch. 5
+KA = 0.95;                  % Supercritical airfoild number thing slide 10
 d_f = 2.165*3.2808399;      % Fuselage diameter, converted from m to ft
 l_f = 60.299;               % Fuselage length (ft) from excel --> 18.379 m
 b = 44.9;                   % wingspan (ft)

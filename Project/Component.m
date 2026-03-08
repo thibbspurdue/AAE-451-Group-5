@@ -10,59 +10,35 @@ classdef Component
         wetted_area
     end
 
-    methods
-        function obj = Component(args)
+    methods (Access = public)
+        function obj = Component(interference_factor, wetted_area, mass)
             % COMPONENT Construct a generic Component object.
             arguments
-                args.?Component
+                interference_factor
+                wetted_area = 0
+                mass = 0
             end
 
-            if nargin > 0
-                for field = fieldnames(args)
-                    obj.(field) = args.(ul(field));
-                end
+            if nargin == 0
+                return
             end
-        end % constructor
 
-        function output = calc_cd0(obj, altitude, ref_wing_area, form_factor, characteristic_length, airspeed)
+            obj.interference_factor = interference_factor;
+            obj.wetted_area = ul(wetted_area);
+            obj.mass = ul(mass);
+        end
+
+        function output = calc_cd0(obj, skin_friction_coeff, ref_wing_area)
             % CALC_CD0 Calculates and returns parasitic drag of component
             arguments
                 obj
-                altitude {mustBePositive}
+                skin_friction_coeff {mustBePositive}
                 ref_wing_area {mustBePositive}
-                form_factor
-                characteristic_length
-                airspeed.mach_number = 0
-                airspeed.velocity = 0
             end
-
-            altitude = ul(altitude);
             ref_wing_area = ul(ref_wing_area);
-            characteristic_length = ul(characteristic_length);
-            airspeed.velocity = ul(airspeed.velocity);
-
-            if airspeed.velocity == 0
-                if airspeed.mach_number == 0
-                    error("Mach number or velocity required")
-                else
-                    airspeed.velocity = Atm.mach_to_v(altitude, airspeed.mach_number);
-                end
-            else
-                if abs(mach_number - Atm.v_to_mach(altitude, airspeed.velocity)) / airspeed.mach_number > 0.01
-                    error("Conflicting Mach number and velocity provided (> 1% difference)\n")
-                end
-            end
-
-            reynolds_number = calc_reynolds_number(characteristic_length, altitude, airspeed.velocity);
-            skin_friction_factor = calc_skin_friction_factor(reynolds_number);
-
-            if obj.wetted_area == 0 || ul(skin_friction_factor) == 0
-                output = 0;
-            else
-                output = form_factor * obj.interference_factor * skin_friction_factor * obj.wetted_area / ref_wing_area;
-            end
+            output = obj.form_factor * obj.interference_factor * skin_friction_coeff * obj.wetted_area / ref_wing_area;
         end
-    end % methods
+    end
 
     methods (Static)
         function re = calc_reynolds_number(length, altitude, velocity)
@@ -84,6 +60,6 @@ classdef Component
             % Slide 11. Requires Reynolds number.
             output = 0.455 / (log10(reynolds_number)^2.58);
         end
-    end % methods
+    end
 end
 
