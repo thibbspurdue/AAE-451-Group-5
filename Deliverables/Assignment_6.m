@@ -1,15 +1,7 @@
 % AAE 451 Spring 2026
 % Assignment 6
 % Team 5
-% VERSION 1.2
-
-% Variables
-% This section has all variables used in other Assignment Codes. Variables
-% are used in assignment codes that influence this code.
-
-g = 9.81;         % m/s^2 
-ft_NM = 6076.12;  % 1 Nautical Mile = 6076 feet
-ft_Mi = 5280;     % 1 Mile = 5280 feet
+% VERSION 1.3
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % u = symunit function all inputs are multiplied by u.unit. With ul(),
@@ -17,27 +9,35 @@ ft_Mi = 5280;     % 1 Mile = 5280 feet
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 u = symunit;      % Initialise symbolic units object
 
+% Variables
+% This section has all variables used in other Assignment Codes. Variables
+% are used in assignment codes that influence this code.
+g = 9.81;         % m/s^2
+
 %% Aircraft Dependent Variables
 
 % Assignment 3
 
-Cruise_SFC = ul(0.80*u.lbm/(u.lbf*u.hr));      % lb/lbf * hr, currently from propulsion system choice
-Combat_SFC = ul(1.9*u.lbm/(u.lbf*u.hr));       % lb/lbf * hr, currently from propulsion system choice
-Loiter_SFC = ul(0.80*u.lbm/(u.lbf*u.hr));      % lb/lbf * hr, currently from propulsion system choice
-W_payload = ul(10215* u.lbm);                  % 2500 lb avionics suite + 7500 lb engines
-%W_crew = ul(215 *u.lbm);                      % lbs, Given in Assignment 3 Description
+loiter_frac = @(sfc, l_d_ratio, endurance) exp(-endurance * sfc / l_d_ratio);
+cruise_frac = @(sfc, l_d_ratio, velocity, range) exp(-range * sfc / velocity / l_d_ratio);
+
+Cruise_SFC = g * ul(0.88*u.lbm/(u.lbf*u.hr));  % lb/lbf * hr, F135 engine data
+Combat_SFC = g * ul(1.92*u.lbm/(u.lbf*u.hr));  % lb/lbf * hr, F135 engine data
+Loiter_SFC = g * ul(0.70*u.lbm/(u.lbf*u.hr));  % lb/lbf * hr, F135 engine data
+W_payload = ul(10215 * u.lbm);                 % 2500 lb avionics suite + 7500 lb engines
+%W_crew = ul(215 *u.lbm);                      % Given in Assignment 3 Description
 Kvs = 1;                                       % 1 for fixed wing sweep
-V_Cruise = ul(516 * ft_NM*u.ft/u.hr);          % Nicolai (136), Assumption that Cruise is 0.9 at alt 36000-45000
-V_Sup = ul(918*ft_NM*u.ft/u.hr);               % Supersonic is 1.6
+V_Cruise = ul(516 * u.inm/u.hr);               % Nicolai (136), Assumption that Cruise is 0.9 at alt 36000-45000
+V_Sup = ul(918 * u.inm/u.hr);                  % Supersonic is 1.6
 Wing_loading = ul(93*u.lbm/(u.ft)^2);          % lb/ft^2
-Thrust_Weight = 1.2;                          % Chosen Design Parameter
+Thrust_Weight = 1.2;                           % Chosen Design Parameter
 
 % Assignment 4
 h_cruise_sup = ul(40000*u.ft);                 % altitude (FEET)
 h_Seroc_Strike_dash = ul(100*u.ft);            % altitude (FEET) at SL
 M = 0.9;                                       % Assumed cruise speed, 
 % Chosen Design Parameters
-AR_w = 3.325;                                  % Aspect Ratio (chosen)
+AR_w = 3.325;                                  
 AR_ht = 1.989699;
 AR_vt = AR_ht;
 dia_fuselage = ul(2.165*u.m);                  % Fuselage diameter (m)
@@ -45,43 +45,7 @@ len_fuselage = ul(18.379*u.m);                 % Fuselage length (m)
 b = ul(18.288*u.m);                            % wingspan (ft), Sunfish Specific
 S_ref = ul(100.584*u.m^2);                     % reference area (ft^2)
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Check different areas Sref...
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-% All following are based on Assignment 1 and measurements of online aircraft model
-% Wing Geometry
-t_c_w = 0.15;                                  % thickness over chord wing, u/l, Sunfish specific
-MCS_w = ul(0.589921*u.rad);                    % Wing midchord sweep, rad
-QCS_w = ul(0.589921*u.rad);                    % Wing quarter chord sweep, rad
-LES_w = ul(0.589921*u.rad);                    % Wing leading edge sweep, rad
-c_r = ul(11*u.m);                              % Wing root chord, m
-S = ul(S_ref*u.ft^2);                          % Wing reference area, ft^2
-S_w = ul(S*u.ft^2);                            % Wing area, ft^2, (should subtract fuselage overlap)
-c_t = ul(2*b/AR_w-c_r);                        % Wingtip chord, ft -> m, based on Ct = 2*b/AR-cr
-ch_w = ul((c_r + c_t)/2*u.m);                  % Wing mean chord, ft -> m
-
-% Horizontal Tail Geometry
-t_c_ht = .06;                                  % thickness over chord (dimensionless)
-MCS_ht = ul(0*u.deg);                          % Mid chord sweep (deg)
-QCS_ht = ul(0*u.deg);                          % Quarter chord sweep (deg)
-LES_ht = ul(0*u.deg);                          % Leading edge sweep (deg)
-ch_ht = ul(.762*u.m);                          % Chord length of the horizontal tail (m)
-ct_ht = ul(2.5*u.m);                           % Tip chord of the horizontal tail (m)
-cr_ht  = ul(2.5*u.m);                          % Root chord of the horizontal tail (m)
-S_ht = ul(12.37437*u.m^2);
-b_ht = ul(4.94*u.m);
-
-% Vertical Tail Geometry
-t_c_vt = .06;                                  % thickness over chord (dimensionless)
-MCS_vt = ul(0*u.deg);                          % Mid chord sweep (deg)
-QCS_vt = ul(0*u.deg);                          % Quarter chord sweep (deg)
-LES_vt = ul(0*u.deg);                          % Leading edge sweep (deg)
-ch_vt = ul(.762*u.m);                          % Chord length of the vertical tail (m)
-S_vt = ul(12.37437*u.m^2);
-b_vt = ul(4.9497*u.m);
-ct_vt = ul(2.5*u.m);                           % Tip chord of the horizontal tail (m)
-cr_vt  = ul(2.5*u.m);                          % Root chord of the horizontal tail (m)
 
 % beta = [1, .78, .6];                           % Weight Fractions From Assignment 4
 % UPDATE                             
@@ -188,7 +152,7 @@ for Carrier_Penalty = [0.031]
         iter = iter + 1;
        
         % Determine Empty Weight Fraction
-        We_W0 = (A + B*(W0^C1)*(AR_w^C2)*(Thrust_Weight^C3)*(Wing_loading^C4)*(Combat_Speed^C5)*Kvs) + Carrier_Penalty;
+        We_W0 = (A + B*(W0^C1)*(aircraft_wing.aspect_ratio^C2)*(Thrust_Weight^C3)*(Wing_loading^C4)*(Combat_Speed^C5)*Kvs) + Carrier_Penalty;
         
         % Re-Determine the total weight
         % W0 = (W_crew + W_payload) / (1 - Wf_W0 - We_W0);
@@ -211,28 +175,14 @@ disp(" ")
 aircraft.weight = ul(unitConvert(W0 * u.lbf, u.N));
 
 % Defining component objects
-aircraft_wing = Wing(b, AR_w, t_c_w, c_r, c_t, 1.0);
-aircraft_wing.QC_sweep = QCS_w; % Set property if not in constructor
-aircraft_wing.LE_sweep = LES_w;
 
-tail_h_obj = Wing(b_ht, AR_ht, t_c_ht, cr_ht, ct_ht, 1.08);
-tail_h_obj.QC_sweep = deg2rad(QCS_ht);
-tail_h_obj.LE_sweep = deg2rad(LES_ht);
-
-tail_v_obj = Wing(b_vt, AR_vt, t_c_vt, cr_vt, ct_vt, 1.03);
-tail_v_obj.QC_sweep = deg2rad(QCS_vt);
-tail_v_obj.LE_sweep = deg2rad(LES_vt);
 
 comp_list = {aircraft_wing, tail_h_obj, tail_v_obj};
-e_oswald = aircraft_wing.oswald_eff; 
-SWP = aircraft_wing.QC_sweep;
-
-S_ref_main_m2 = aircraft_wing.reference_area;
 
 %% Have Separate Drag Buildup Function
 
-C_L_des = ul(aircraft.weight / (0.5 * Atm.density(40000) * V_cruise^2 * S_ref_main_m2));
-M_DD = K_A/cos(SWP) - aircraft_wing.thickness_chord_ratio/(cos(SWP)^2) - C_L_des / (10 * (cos(SWP)^3));
+C_L_des = ul(aircraft.weight / (0.5 * Atm.density(40000) * V_cruise^2 * aircraft_wing.reference_area));
+M_DD = K_A/cos(aircraft_wing.leading_edge_sweep) - aircraft_wing.thickness_chord_ratio/(cos(aircraft_wing.leading_edge_sweep)^2) - C_L_des / (10 * (cos(aircraft_wing.LE_sweep)^3));
 M_crit = M_DD - 0.08;
 
 %% --- 3. DYNAMIC DRAG BUILDUP LOOP ---
@@ -253,7 +203,7 @@ for i = 1:length(Machs)
     for k = 1:length(comp_list)
         comp = comp_list{k};
         % Local CD0 for this specific component
-        comp_local_cd0 = comp.calc_cd0(h_analysis, M);
+        comp_local_cd0 = comp.calc_cd0(h_analysis, "mach_number", M);
         
         % Normalize to S_ref and store in breakdown matrix
         scaled_cd0 = comp_local_cd0 * comp.reference_area / S_ref_main_m2;
@@ -266,9 +216,9 @@ for i = 1:length(Machs)
     % --- Step B: Induced & Wake Drag Logic ---
     V_M = ul(M * Atm.sonic_speed(h_analysis));
     q_M = 0.5 * Atm.density(h_analysis) * V_M^2;
-    C_L_M = ul(aircraft.weight / (q_M * S_ref_main_m2));
+    C_L_M = ul(aircraft.weight / (q_M * aircraft_wing.reference_area));
     
-    K_sub = 1 / (pi * aircraft_wing.aspect_ratio * e_oswald);
+    K_sub = 1 / (pi * aircraft_wing.aspect_ratio * aircraft_wing.oswald_eff);
     Msq_m1 = max(M^2 - 1, 0.001);
     Mpeak_m1 = max(M_DW_peak^2 - 1, 0.001);
     

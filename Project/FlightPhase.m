@@ -9,7 +9,9 @@ classdef FlightPhase
     properties (Constant)
         tempunits = symunit;
         g (1,1) double {mustBePositive} = 9.81 % gravitational acceleration
+        engine_types = 
     end
+
     properties
         altitude (1,1)                     % altitude ASL, m
         air_density                        % (ρ) kg*m^-3

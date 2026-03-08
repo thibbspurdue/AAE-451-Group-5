@@ -40,22 +40,29 @@ QCS_vt = Swp_vt;
 S_ref = S;
 
 %% Variables needed for calculation (please alter this section later on)
-MTOW = ;
-W_E = ;%empty weight
-W_Fuel_Limit = ;%we dont know this yet, def in kg
-W_payload = ul(10215* u.lbm); 
+W_penalty = 0.20 * 10479 * u.kg; %adding a 20% weight penalty????
+
+MTOW = W_penalty + 21410 * u.kg;
+W_E =  W_penalty + 10479 * u.kg;%empty weight
+W_Fuel_Limit = 1.25*6298.5  * u.kg;%Assuming it is 25% more than intended may payload one
+W_payload = 10215* u.lbm; 
 W_payload = unitConvert(W_payload, u.kg);
-V_Cruise = ;%Need to find optimal cruising speed?
+V_Cruise = 400 * u.m/u.s;%Need to find optimal cruising speed?
+
+T_wet = 43000 * u.lbf;
+T_wet = unitConvert(T_wet, u.N); %wet thrust, one engine
+
+T_dry = 28000 * u.lbf;
+T_dry = unitConvert(T_dry, u.N); %wet thrust, one engine
 
 Cruise_L_D = 9.2;                  % Assignment 4
 Combat_L_D = 4.5;                  % Assignment 4
 Loiter_L_D = 11;                   % Assignment 4
 
 %dummy values used for testing the range
-% MTOW = 90000 * 0.45359237 * u.kg;
-% W_E = 50000* 0.45359237 * u.kg;%empty weight
-% W_Fuel_Limit = 35000* 0.45359237 * u.kg;%we dont know this yet, def in kg
-% V_Cruise = 400 * u.m/u.s;
+%MTOW = 90000 * 0.45359237 * u.kg;
+%W_E = 50000* 0.45359237 * u.kg;%empty weight
+%W_Fuel_Limit = 35000* 0.45359237 * u.kg;%we dont know this yet, def in kg
 %% Code iteration from previous assignments
 C_D0 = Drag_Complex(Q, l_f, d_f, l_N, d_N, QCS_w, QCS_ht, QCS_vt, t_c_w, t_c_ht, t_c_vt, c_bar, c_r, c_ht, c_vt, S_ref, S_w, S_t, S_v); 
 e = 4.61 * (1 - 0.045*AR^0.68) * (cos(Swp_w)^0.15) - 3.1;
@@ -70,7 +77,7 @@ doghouse(C_L_max,S,C_D0,AR,W,Swp_w,t_c_w)
 %% Task 3 + 4. Flight Envelope and Specific Excess Power
 %C_D0L is the 0 Lift Coefficent of Drag when th eplane is loaded
 C_D0L = C_D0; %Assuming everything is stored inside the aircraft
-Flight_envelope(AR, Swp_w, S, t_c_w, W, T_SL, C_D0, C_D0L);
+Flight_envelope(AR, Swp_w, S, t_c_w, MTOW, 2 * T_dry, C_D0, C_D0L, C_L_max);
 
 %% Task 5. Carrier Landing and Arrestment
 app_coef = 1.1; % range from 1.1 ~ 1.15
@@ -186,6 +193,7 @@ R = unitConvert(R, u.nmi);
 D = [R, 0];
 
 %Plotting
+figure;
 x = [A(1) B(1) C(1) D(1) 0];
 y = [A(2) B(2) C(2) D(2) 0];
 
