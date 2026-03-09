@@ -40,7 +40,8 @@ QCS_vt = Swp_vt;
 S_ref = S;
 
 %% Variables needed for calculation (please alter this section later on)
-MTOW = 50989 * 0.45359237 * u.kg;
+%MTOW = 50989 * 0.45359237 * u.kg;
+MTOW = 65000 * 0.45359237 * u.kg;
 W_E =  0.5765 * MTOW;%empty weight
 W_Fuel_Limit = 1.125 * 0.3210 * MTOW;%Assuming it is 25% more than intended may payload one
 W_payload = 5227* u.lbm; 
@@ -59,9 +60,10 @@ Combat_L_D = 4.5;                  % Assignment 4
 Loiter_L_D = 9;                   % Assignment 6
 
 %dummy values used for testing the range
-%MTOW = 90000 * 0.45359237 * u.kg;
-%W_E = 50000* 0.45359237 * u.kg;%empty weight
-%W_Fuel_Limit = 35000* 0.45359237 * u.kg;%we dont know this yet, def in kg
+% MTOW = 90000 * 0.45359237 * u.kg;
+% W_E = 50000* 0.45359237 * u.kg;%empty weight
+% W_Fuel_Limit = 35000* 0.45359237 * u.kg;%we dont know this yet, def in kg
+% V_Cruise = 400 * u.m/u.s;
 %% Code iteration from previous assignments
 C_D0 = Drag_Complex(Q, l_f, d_f, l_N, d_N, QCS_w, QCS_ht, QCS_vt, t_c_w, t_c_ht, t_c_vt, c_bar, c_r, c_ht, c_vt, S_ref, S_w, S_t, S_v); 
 e = 4.61 * (1 - 0.045*AR^0.68) * (cos(Swp_w)^0.15) - 3.1;
@@ -196,7 +198,6 @@ R = unitConvert(R, r_units);
 D = [R, 0];
 
 %Plotting
-figure;
 x = [A(1) B(1) C(1) D(1) 0];
 y = [A(2) B(2) C(2) D(2) 0];
 
