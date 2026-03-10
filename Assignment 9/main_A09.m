@@ -22,8 +22,14 @@
 
 %% Unit stuff?
 u = symunit;
-function output = ul(input)
-    output = double(separateUnits(input));
+function output = iul(input, unit, unit2)
+    if nargin == 1  % Symbolic input, simple unit conversion
+        output = double(separateUnits(unitConvert(input,'US')));
+    elseif nargin == 2  % Symbolic input, complicated unit conversion
+        output = double(separateUnits(unitConvert(input, unit)));
+    else    % double input (undesired)
+        output = double(separateUnits(unitConvert(input*unit, unit2)));
+    end
 end
 
 %% Parameters derivation
@@ -40,22 +46,28 @@ QCS_vt = Swp_vt;
 S_ref = S;
 
 %% Variables needed for calculation (please alter this section later on)
-MTOW = ;
-W_E = ;%empty weight
-W_Fuel_Limit = ;%we dont know this yet, def in kg
-W_payload = ul(10215* u.lbm); 
+MTOW = 50989 * 0.45359237 * u.kg;
+W_E =  0.5765 * MTOW;%empty weight
+W_Fuel_Limit = 1.125 * 0.3210 * MTOW;%Assuming it is 25% more than intended may payload one
+W_payload = 5227* u.lbm; 
 W_payload = unitConvert(W_payload, u.kg);
-V_Cruise = ;%Need to find optimal cruising speed?
+V_Cruise = 0.9 * 323 * u.m/u.s;%Need to find optimal cruising speed?
+%V_Cruise = 400 * u.m/u.s;
 
-Cruise_L_D = 9.2;                  % Assignment 4
+T_wet = 43000 * u.lbf;
+T_wet = unitConvert(T_wet, u.N); %wet thrust, one engine
+
+T_dry = 28000 * u.lbf;
+T_dry = unitConvert(T_dry, u.N); %wet thrust, one engine
+
+Cruise_L_D = 9;                  % Assignment 6
 Combat_L_D = 4.5;                  % Assignment 4
-Loiter_L_D = 11;                   % Assignment 4
+Loiter_L_D = 9;                   % Assignment 6
 
 %dummy values used for testing the range
-% MTOW = 90000 * 0.45359237 * u.kg;
-% W_E = 50000* 0.45359237 * u.kg;%empty weight
-% W_Fuel_Limit = 35000* 0.45359237 * u.kg;%we dont know this yet, def in kg
-% V_Cruise = 400 * u.m/u.s;
+%MTOW = 90000 * 0.45359237 * u.kg;
+%W_E = 50000* 0.45359237 * u.kg;%empty weight
+%W_Fuel_Limit = 35000* 0.45359237 * u.kg;%we dont know this yet, def in kg
 %% Code iteration from previous assignments
 C_D0 = Drag_Complex(Q, l_f, d_f, l_N, d_N, QCS_w, QCS_ht, QCS_vt, t_c_w, t_c_ht, t_c_vt, c_bar, c_r, c_ht, c_vt, S_ref, S_w, S_t, S_v); 
 e = 4.61 * (1 - 0.045*AR^0.68) * (cos(Swp_w)^0.15) - 3.1;
@@ -70,38 +82,46 @@ doghouse(C_L_max,S,C_D0,AR,W,Swp_w,t_c_w)
 %% Task 3 + 4. Flight Envelope and Specific Excess Power
 %C_D0L is the 0 Lift Coefficent of Drag when th eplane is loaded
 C_D0L = C_D0; %Assuming everything is stored inside the aircraft
-Flight_envelope(AR, Swp_w, S, t_c_w, W, T_SL, C_D0, C_D0L);
+Flight_envelope(AR, Swp_w, S, t_c_w, MTOW, 2 * T_wet, C_D0, C_D0L, C_L_max);
 
 %% Task 5. Carrier Landing and Arrestment
 app_coef = 1.1; % range from 1.1 ~ 1.15
 V_wod = 15 * u.knot; % Arbitrary
 L_s = 344 * u.ft;
 
+
 V_stall = sqrt(2*W*g/(Atm.density(0*u.ft)*u.kg/u.m^3*S*C_L_max));
 V_app = app_coef * V_stall;
 V_eng = unitConvert(1.05 * V_app - V_wod, u.knot);
-V_eng_range = linspace(100,180).*u.knot; 
+V_eng_nw = unitConvert(1.05 * V_app, u.knot);
+V_eng_range = linspace(90,180).*u.knot; 
 %k_E_eng = 1/2*unitConvert(W,'US')*V_eng^2;
 C2 = 40000 * u.lbf * (145 * u.knot)^2; 
 W_arrest_limit = C2 ./ (V_eng_range.^2);
 
 figure()
 hold on
-area(separateUnits(unitConvert(V_eng_range, u.knot)), separateUnits(W_arrest_limit), 'FaceColor',[0.95 0.9 0.9], 'EdgeColor','none')
-plot(separateUnits(unitConvert(V_eng_range, u.knot)), separateUnits(W_arrest_limit))
+area(separateUnits(unitConvert(V_eng_range, u.knot)), separateUnits(W_arrest_limit), 'FaceColor',[0, 0.4470, 0.7410], 'EdgeColor','none','FaceAlpha',0.2)
+plot(separateUnits(unitConvert(V_eng_range, u.knot)), separateUnits(W_arrest_limit), 'Color','k','LineWidth',1.5)
 ylim([20000 70000])
-plot(separateUnits(unitConvert(V_eng, u.knot)), separateUnits(unitConvert(W*g, u.lbf)),'Marker','.','MarkerSize',10,'LineStyle','none')
+plot(separateUnits(unitConvert(V_eng, u.knot)), separateUnits(unitConvert(W*g, u.lbf)),'Marker','.','MarkerSize',10,'LineStyle','none', 'color', [0, 0.4470, 0.7410])
+plot(separateUnits(unitConvert(V_eng_nw, u.knot)), separateUnits(unitConvert(W*g, u.lbf)),'Marker','.','MarkerSize',10,'LineStyle','none', 'color', [0.6350, 0.0780, 0.1840])
+string_eng_wod = {sprintf('Engaging airspeed = %.2f m/s (%.2f knots)', ul(V_eng), double(separateUnits(unitConvert(V_eng,u.knot)))), 'WOD = 15 knots condition'};
+string_eng_nw = {sprintf('Engaging airspeed = %.2f m/s (%.2f knots)', ul(V_eng_nw), double(separateUnits(unitConvert(V_eng_nw,u.knot)))), 'WOD = 0 knots condition'};
+annotation('textbox', [.2 .6 .25 .25], 'string',string_eng_wod , 'FitBoxToText', 'on', 'BackgroundColor','w', 'FaceAlpha',0.7, 'EdgeColor',[0, 0.4470, 0.7410], 'LineWidth',1.2)
+annotation('textbox', [.3 .48 .25 .25], 'string',string_eng_nw , 'FitBoxToText', 'on', 'BackgroundColor','w', 'FaceAlpha',0.7, 'EdgeColor',[0.6350, 0.0780, 0.1840], 'LineWidth',1.2)
 grid on
 grid minor
-title("Arresting gear performance")
+title("Arresting gear performance", 'FontSize',15)
 xlabel("Engaging speed (knots)")
 ylabel("Airplane weight (lbf)")
-legend('', 'Weight capacity for Mark 7 mod 3', 'Landing condition')
+lgd = legend('', 'Weight capacity for Mark 7 mod 3', 'Landing condition with WOD = 15 knots', 'Landing condition with no WOD');
+lgd.FontSize = 12;
 hold off
 %% Task 6 & 7 Setup: Single Engine Rate of Climb (SEROC) & Climb Performance: Rate and Angle of Climb
 % Run this first before running either 6 or 7
 
-V_climb_range = unitConvert(u.knot .*linspace(200,1000,100),'SI');
+V_climb_range = unitConvert(u.knot .*linspace(100,1000,100),'SI');
 rho = Atm.density(10000* u.ft) * u.kg/u.m^3;
 Mb = ul(V_climb_range) ./Atm.sonic_speed(10000*u.ft);
 hb = ul(10000*u.ft);
@@ -114,6 +134,17 @@ T_wet = 191E3 * u.N;
 D = 1/2 * rho .* V_climb_range.^2 * S .* C_D;
 
 %% Task 6 - output given in Command line
+V_seroc_range = u.m / u.s .* linspace(30,65,100); 
+M_seroc_TO = ul(V_seroc_range) ./Atm.sonic_speed(0*u.ft);
+K_seroc = K_find_matrix(M_seroc_TO,ul(AR),ul(Swp_w), ul(t_c_w), ul(W), 0, ul(S));
+
+C_L_seroc_l = ul(W*g./(1/2*rho*V_seroc_range.^2*S));    % CL for SEROC Launch
+C_L_seroc_a = C_L_seroc_l;                              % CL for SEROC approach
+C_L_seroc_l(ul(C_L_seroc_l) > 1.5/1.21) = 1.5/1.21;     % MAX CL = C_L_max/1.21 (Raymer)
+
+C_D_seroc_l = C_D0 + K_seroc .* C_L_seroc_l.^2;         % CD found for SEROC using K(same range of mach number)
+C_D_seroc_a = C_D0 + K_seroc .* C_L_seroc_a.^2;
+
 % Takeoff procedure: Landing gear included
 M_TO = ul(V_stall*1.2) ./ Atm.sonic_speed(0);
 h_TO = 0;
@@ -137,6 +168,41 @@ D_app = 1/2 * rho .* V_app^2 * S_ref * C_D_app;
 
 SEROC_app = unitConvert(V_app * (T_wet - D_app) / (W*g), u.ft / u.min);     % This would benefit a lot from empty weight
 fprintf("The SEROC of approach is %.2f ft/min.\n", double(separateUnits(SEROC_app)))
+% Range of serocs (this is weird)
+C_D_TO_range = C_D_seroc_l + 0.7 * 22 * u.m^2 / S_ref;
+D_TO_range = 1/2 * rho .* (V_seroc_range).^2 * S_ref .* C_D_TO_range;
+SEROC_TO_range = unitConvert(V_seroc_range .* (T_wet - D_TO_range) ./ (W*g), u.ft / u.s);
+
+C_D_app_range = C_D_seroc_a + 0.7 * 22 * u.m^2 / S_ref + 0.075;
+D_app_range = 1/2 * rho .* (V_seroc_range).^2 * S_ref .* C_D_app_range;
+SEROC_app_range = unitConvert(V_seroc_range .* (T_wet - D_app_range) ./ (W*g), u.ft / u.s);
+
+figure()
+grid on
+grid minor
+hold on
+plot(iul(V_seroc_range), iul(SEROC_TO_range, u.ft/u.min), 'Color', 'r')
+plot(iul(V_seroc_range), iul(SEROC_app_range,u.ft/u.min), 'Color','b')
+plot(iul(V_stall * 1.2), iul(SEROC_TO,u.ft/u.min),'LineStyle','none','Marker','.','MarkerSize',15, 'Color','r')
+plot(iul(V_app), iul(SEROC_app,u.ft/u.min), 'LineStyle','none','Marker','.','MarkerSize',15, 'Color','b')
+l_text = sprintf("Launch SEROC of %.4f m/s(%.4f ft/min) at airspeed %.4 ft/min", ul(SEROC_TO), double(separateUnits(SEROC_TO)), iul(1.2 * V_stall)/60);
+a_text = sprintf("Approach SEROC of %.4f m/s(%.4f ft/min) at airspeed %.4 ft/min", ul(SEROC_app), double(separateUnits(SEROC_app)), ul(V_app)/60);
+legend("Launch configuration", "Approach configuration", l_text, a_text, 'Location','best')
+xlabel("Airspeed in ft/min")
+ylabel("Rate of climb in ft/min")
+title("Change of SEROC over different airspeed")
+xlim([100 200])
+hold off
+
+% Minimum thrust required for SEROC rates
+SEROC_TO_req = unitConvert(200 * u.ft / u.min, "SI");
+SEROC_app_req = unitConvert(500 * u.ft / u.min, "SI");
+
+T_TO_req = unitConvert((SEROC_TO_req * W * g / (V_stall * 1.2) + D_TO),u.N);
+T_app_req = unitConvert((SEROC_app_req * W * g / (V_app) + D_app), u.N);
+
+fprintf("The minimum thrust required for SEROC of launch is %.4f kN.\n", ul(T_TO_req)/1000)
+fprintf("The minimum thrust required for SEROC of approach is %.4f kN.\n", ul(T_app_req)/1000)
 
 %% Task 7 Plot
 a_climb = asind(ul((T_dry * 2 - D)/(W*g)));
@@ -150,42 +216,46 @@ grid on
 grid minor
 yyaxis left
 hold on
-plot(ul(V_climb_range), ROC, 'b:')
-plot(max_ROC(2), max_ROC(1), 'LineStyle','none','Marker','.','MarkerSize',15, 'MarkerFaceColor','b')
-ylabel("Rate of climb in m/s","Color",'b')
+plot(iul(V_climb_range, u.knot), iul(ROC, u.m/u.s, u.ft/u.min), 'b:')
+plot(iul(max_ROC(2), u.m/u.s,u.knot), iul(max_ROC(1), u.m/u.s,u.ft/u.min), 'LineStyle','none','Marker','.','MarkerSize',15, 'MarkerFaceColor','b')
+ylabel("Rate of climb in ft/min","Color",'b')
 yyaxis right
-plot(ul(V_climb_range), a_climb, 'r')
+plot(iul(V_climb_range, u.knot), a_climb, 'r')
 ylabel("Angle of climb in degrees",'Color','r')
-plot(max_a(2), max_a(1), 'LineStyle','none','Marker','.','MarkerSize',15, 'MarkerFaceColor','r')
-
-legend("Rate of climb", "Maximum ROC = "+real(max_ROC(1))+" m/s at Vy = "+real(max_ROC(2)*cosd(max_ROC(3)))+" m/s", ...
-    "Angle of climb", "Maximum AOC = "+real(max_a(1))+" degrees at Vx = "+real(max_a(2)*sind(max_a(1)))+" m/s", 'Location','best')
+plot(iul(max_a(2),u.m/u.s, u.knot), max_a(1), 'LineStyle','none','Marker','.','MarkerSize',15, 'MarkerFaceColor','r')
+legend("Rate of climb", "Maximum ROC = "+iul(real(max_ROC(1)), u.m/u.s, u.ft/u.min)+" ft/min at Vy = "+iul(real(max_ROC(2)*cosd(max_ROC(3))), u.m/u.s, u.knot)+" knots", ...
+    "Angle of climb", "Maximum AOC = "+real(max_a(1))+" degrees at Vx = "+iul(real(max_a(2)*sind(max_a(1))), u.m/u.s, u.knot)+" knots", 'Location','best')
 title("Aircraft climb performance at 10,000 ft")
-xlabel("Airspeed in m/s")
+xlabel("Airspeed in knots")
 
 %% Task 8. Payload-Range Envelope
+%Add weight penalty
+W_penalty = W_E * 0; %adding a 10% weight penalty????
+
 %Point definition [range, payload_weight]
+r_units = u.nmi;
 
 %A is range 0, max payload
 A = [0, W_payload];
 
 %B is max payload, corresponding range
-R = Range(W_payload, W_E, MTOW, V_Cruise, Cruise_L_D, Combat_L_D, Loiter_L_D);
-R = unitConvert(R, u.nmi);
+R = Range(W_payload, W_E + W_penalty, MTOW + W_penalty, V_Cruise, Cruise_L_D, Combat_L_D, Loiter_L_D);
+R = unitConvert(R, r_units);
 B = [R, W_payload];
 
 %C is still MTOW, but hits the fuel limit
 W_p = MTOW - W_E - W_Fuel_Limit;
-R = Range(W_p, W_E, MTOW, V_Cruise, Cruise_L_D, Combat_L_D, Loiter_L_D);
-R = unitConvert(R, u.nmi);
+R = Range(W_p, W_E + W_penalty, MTOW + W_penalty, V_Cruise, Cruise_L_D, Combat_L_D, Loiter_L_D);
+R = unitConvert(R, r_units);
 C = [R, W_p];
 
 %D is at 0 payload with the fuel limit
-R = Range(0, W_E, W_E + W_Fuel_Limit, V_Cruise, Cruise_L_D, Combat_L_D, Loiter_L_D);
-R = unitConvert(R, u.nmi);
+R = Range(0, W_E + W_penalty, W_E + W_penalty + W_Fuel_Limit, V_Cruise, Cruise_L_D, Combat_L_D, Loiter_L_D);
+R = unitConvert(R, r_units);
 D = [R, 0];
 
 %Plotting
+figure;
 x = [A(1) B(1) C(1) D(1) 0];
 y = [A(2) B(2) C(2) D(2) 0];
 
@@ -195,9 +265,9 @@ y = ul(y);
 x_max = round(1.25*x(4), 1, 'significant');
 y_max = round(1.25*y(1), 1, 'significant');
 
-fill(x, y, [0.2 0.6 0.9]);
+fill(x, y, 'b', 'FaceAlpha',0.3);
 xlabel('Range [nmi]');
 ylabel('Payload weight [kg]');
 xlim([0 x_max]); ylim([0 y_max]);
 grid on;
-title("Payload-Range Diagram")
+title("Breguet Payload-Range Envelope")

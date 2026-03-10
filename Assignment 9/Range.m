@@ -7,9 +7,9 @@ u = symunit; % Initialise symbolic units object
 %W_E is the weight of the aircraft with no fuel or payload
 
 %SFC values
-Cruise_SFC = 0.80*u.lbm/(u.lbf*u.hr);      % lb/lbf * hr, currently from propulsion system choice
+Cruise_SFC = 0.88*u.lbm/(u.lbf*u.hr);      % lb/lbf * hr, currently from propulsion system choice
 Combat_SFC = 1.9*u.lbm/(u.lbf*u.hr);       % lb/lbf * hr, currently from propulsion system choice
-Loiter_SFC = 0.80*u.lbm/(u.lbf*u.hr);      % lb/lbf * hr, currently from propulsion system choice
+Loiter_SFC = 0.88*u.lbm/(u.lbf*u.hr);      % lb/lbf * hr, currently from propulsion system choice
 
 % Configuration: Carrier-based, Fixed Wing (or simple fold), Afterburning Turbofans.
 W1_W0 = 0.970;          % Given in Assignment 3 Description
@@ -32,7 +32,7 @@ Loiter_SFC = Loiter_SFC * g;
 Cruise_SFC = unitConvert(Cruise_SFC, 1/u.s);
 Combat_SFC = unitConvert(Combat_SFC, 1/u.s);
 Loiter_SFC = unitConvert(Loiter_SFC, 1/u.s);
-
+%disp(Cruise_SFC);
 Combat_Time = unitConvert(Combat_Time, u.s);
 Loiter_Time = unitConvert(Loiter_Time, u.s);
 %% Calculating General values using input weights
