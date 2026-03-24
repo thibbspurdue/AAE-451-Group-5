@@ -11,6 +11,7 @@ n_max = 8;
 n_min = -3;
 M_cruise = 0.9;
 M_max = 1.85;
+C_L_min = -0.6;
 
 W_S = 60 * 47.880258888889; %lbf/ft^2 to Pa
 %% Unit stuff?
@@ -38,4 +39,4 @@ Parameter_Import(spreadsheet, aircraft, airfoil);
 [l_t, l_h, l_v, S_h, S_t] = Parameters_rebalance(l_t, l_v, x_ac, S_t, S_v);
 
 %% V-n diagram
-M_manuver = V_n(n_max, n_min, W_S, C_L_max, C_L_min, C_L_a, c_bar, M_cruise, M_max);
+M_manuver = V_n(n_max, n_min, W_S, C_L_max, C_L_min, ul(C_L_a), ul(c_bar), M_cruise, M_max);

@@ -119,7 +119,7 @@ ylabel("Load Factor (n)")
 
 
 %Calculate good limits
-x_max = ceil(M_max * 1.1);
+x_max = ceil(M_max);
 y_min = - 5 * ceil((- n_min * 1.1)/5);
 y_max = 5 * ceil((n_max * 1.1)/5);
 
