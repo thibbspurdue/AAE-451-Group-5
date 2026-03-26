@@ -40,3 +40,6 @@ Parameter_Import(spreadsheet, aircraft, airfoil);
 
 %% V-n diagram
 M_manuver = V_n(n_max, n_min, W_S, C_L_max, C_L_min, ul(C_L_a), ul(c_bar), M_cruise, M_max);
+
+%% wingbox diagram
+wingbox(b_w, c_r, c_t, W);
