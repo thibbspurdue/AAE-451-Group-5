@@ -1,7 +1,7 @@
 % NNWEIGHTSIZER Script implementing log-space neural network + Gaussian
 % process to predict MTOW from other parameters using historical data
 
-data = rmmissing(readtable("UAV-Params.xlsx"));
+data = rmmissing(readtable("FlyingWingParams.xlsx"));
 param_names = data.Properties.VariableNames;
 
 mtow_index = find(contains(param_names, 'MTOW', 'IgnoreCase', true));
@@ -23,7 +23,7 @@ Y_empty_log = log(Y_empty);
 [xn, xps] = mapminmax(X');
 xn = xn';
 
-n_runs = 1000;
+n_runs = 1000; % DO NOT ENSEMBLE WITH NN, it's complete GIGO on this dataset
 mtow_nn_values = zeros(n_runs, 1);
 mu_mtow_values = zeros(n_runs, 1);
 sigma_mtow_values = zeros(n_runs, 1);
@@ -61,7 +61,7 @@ for i = 1:n_runs
         ];
         
         options = trainingOptions('adam', ...
-            'MaxEpochs', 400, ...
+            'MaxEpochs', 800, ...
             'InitialLearnRate', 5e-4, ...
             'MiniBatchSize', 8, ...
             'Shuffle', 'every-epoch', ...
