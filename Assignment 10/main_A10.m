@@ -39,4 +39,17 @@ Parameter_Import(spreadsheet, aircraft, airfoil);
 [l_t, l_h, l_v, S_h, S_t] = Parameters_rebalance(l_t, l_v, x_ac, S_t, S_v);
 
 %% V-n diagram
-M_manuver = V_n(n_max, n_min, W_S, C_L_max, C_L_min, ul(C_L_a), ul(c_bar), M_cruise, M_max);
+%M_manuver = V_n(n_max, n_min, W_S, C_L_max, C_L_min, ul(C_L_a), ul(c_bar), M_cruise, M_max);
+
+%% Fuselage Loading
+W_am = [
+0.49957  1.2398   1.79037  4.02948  5.2     6       6.8     7.6     8.4     9.2     10      10.8    11.6;
+166.94   414.92   639.4    398.2406 181.818 181.818 181.818 190.476 190.476 190.476 199.134 207.792 216.45
+];
+
+M_ps =[
+0.39624, 2.49936, 3.50520, 10.24128, 4.51104;
+1979.20, 2900.73, 4488.68, 1943.16, 12656.99
+];
+
+fuselage_loading(W_am, ul([x_ac (x_ac+l_t)]) , M_ps, ul(c_r))
