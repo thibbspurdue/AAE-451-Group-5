@@ -39,7 +39,10 @@ Parameter_Import(spreadsheet, aircraft, airfoil);
 [l_t, l_h, l_v, S_h, S_t] = Parameters_rebalance(l_t, l_v, x_ac, S_t, S_v);
 
 %% V-n diagram
-%M_manuver = V_n(n_max, n_min, W_S, C_L_max, C_L_min, ul(C_L_a), ul(c_bar), M_cruise, M_max);
+M_manuver = V_n(n_max, n_min, W_S, C_L_max, C_L_min, ul(C_L_a), ul(c_bar), M_cruise, M_max);
+
+%% wingbox diagram
+wingbox(b_w, c_r, c_t, W);
 
 %% Fuselage Loading
 W_am = [
