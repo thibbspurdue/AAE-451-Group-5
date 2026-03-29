@@ -32,6 +32,9 @@ function output = iul(input, unit, unit2)
     end
 end
 
+function output = ul(input)
+    output = double(separateUnits(input));
+end
 %% Parameters derivation
 spreadsheet = 'Parameters_copy.xlsx';
 aircraft = 'Sunfish';
@@ -49,8 +52,8 @@ S_ref = S;
 %MTOW = 50989 * 0.45359237 * u.kg;
 MTOW = 65000 * 0.45359237 * u.kg;
 W_E =  0.5765 * MTOW;%empty weight
-W_Fuel_Limit = 1.125 * 0.3210 * MTOW;%Assuming it is 25% more than intended may payload one
-W_payload = 5227* u.lbm; 
+W_Fuel_Limit = 1.25 * 0.3210 * MTOW;%Assuming it is 25% more than intended may payload one
+W_payload = 7031 * u.lbm; 
 W_payload = unitConvert(W_payload, u.kg);
 V_Cruise = 0.9 * 323 * u.m/u.s;%Need to find optimal cruising speed?
 %V_Cruise = 400 * u.m/u.s;
@@ -61,9 +64,9 @@ T_wet = unitConvert(T_wet, u.N); %wet thrust, one engine
 T_dry = 28000 * u.lbf;
 T_dry = unitConvert(T_dry, u.N); %wet thrust, one engine
 
-Cruise_L_D = 9;                  % Assignment 6
+Cruise_L_D = 8.65;                  % Assignment 6
 Combat_L_D = 4.5;                  % Assignment 4
-Loiter_L_D = 9;                   % Assignment 6
+Loiter_L_D = 8.65;                   % Assignment 6
 
 %dummy values used for testing the range
 % MTOW = 90000 * 0.45359237 * u.kg;
@@ -261,14 +264,15 @@ x = [A(1) B(1) C(1) D(1) 0];
 y = [A(2) B(2) C(2) D(2) 0];
 
 x = ul(x);
-y = ul(y);
+y = ul(y) ./ 0.45359237; %convert to lbs
 
 x_max = round(1.25*x(4), 1, 'significant');
 y_max = round(1.25*y(1), 1, 'significant');
 
+figure;
 fill(x, y, 'b', 'FaceAlpha',0.3);
 xlabel('Range [nmi]');
-ylabel('Payload weight [kg]');
+ylabel('Payload weight [lbs]');
 xlim([0 x_max]); ylim([0 y_max]);
 grid on;
 title("Breguet Payload-Range Envelope")

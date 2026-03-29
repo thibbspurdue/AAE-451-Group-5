@@ -40,7 +40,9 @@ end
 legend('n = 1','n = 2','n = 3','n = 4','n = 5','n = 6','n = 7','n = 7.5')
 grid on;
 xlabel("Mach number")
-ylabel("Altitude (m)")
+ylabel("Altitude (ft)")
+ylim([0 65000])
+xlim([0 2.5])
 %legend('n = 1', 'n = 2', 'n = 3', 'n = 4', 'n = 5', 'n = 6', 'n = 7', 'n = 7.5')
 title('Sustained Flight Envelopes P_s = 0')
 
@@ -55,6 +57,8 @@ Psss(1, C_D0L, 'red');
 legend("Clean", "Loaded")
 xlabel("Mach number")
 ylabel("Altitude (ft)")
+xlim([0 2.5])
+ylim([0 65000])
 title("Impact of External Stores on 1g flight envelope (Ps = 0)")
 
 %For a value of n, this generates the contour
@@ -99,7 +103,7 @@ function Ps = Psss(n, cd0, c)
     
     %plot(Mstall, h, 'Color', c);
     %[~, Ps] = contour(M, h, Ps', [0 0], 'Color', c);
-    if(n == 1)
+    if(n == 0)
         plot(Mstall, h* 3.2808399, 'Color', c, 'HandleVisibility', 'off');
         contour(M, h* 3.2808399, Ps', [0 0], 'Color', c);
     else
