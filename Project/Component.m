@@ -7,7 +7,6 @@ classdef Component
     properties
         interference_factor = 1
         mass = 0
-        wetted_area
     end
 
     methods (Access = public)
@@ -24,7 +23,6 @@ classdef Component
             end
 
             obj.interference_factor = interference_factor;
-            obj.wetted_area = ul(wetted_area);
             obj.mass = ul(mass);
         end
 
@@ -47,7 +45,9 @@ classdef Component
                 altitude 
                 velocity 
             end
-            [length, altitude, velocity] = ul([length, altitude, velocity]);
+            length = ul(length);
+            altitude = ul(altitude);
+            velocity = ul(velocity);
             re = length * velocity * Atm.density(altitude) / Atm.viscosity_dyn(altitude);
         end
 
