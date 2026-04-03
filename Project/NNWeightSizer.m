@@ -94,7 +94,7 @@ for i = 1:n_runs
     
     %% Gaussian predictions
     
-    sunfish_params = [2, 382, 12, 17.2, 1.6, 20];
+    sunfish_params = [1, 191, 12, 17.2, 1.6, 20];
     sunfish_norm = mapminmax('apply', sunfish_params', xps)';
     
     % NN MTOW
