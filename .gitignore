@@ -36,3 +36,15 @@ resources/
 # buildtool cache folder
 .buildtool/
 
+.idea/misc.xml
+.idea/modules.xml
+debug.log
+Xfoil/pplot.exe
+Xfoil/xfoil.exe
+Xfoil/pxplot.exe
+AAE451.code-workspace
+.idea/AAE451.iml
+.idea/libraries/AAE_451_Final_Assignment_6_Files.xml
+.idea/vcs.xml
+~$FlyingWingParams.xlsx
+.gitignore
