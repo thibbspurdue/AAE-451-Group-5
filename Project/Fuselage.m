@@ -3,15 +3,13 @@ classdef Fuselage < Component
     % Subclass of Component class.
 
     properties
+        fuselage_type = "Hotdog, Raymer eq. 12.31"
         length = 0
         width = 0
-        interference_factor = 1
-        mass = 0
     end
 
     properties (Dependent)
         fineness_ratio
-        wetted_area
     end
 
     properties (Access = private)
@@ -22,31 +20,27 @@ classdef Fuselage < Component
     end
     
     methods (Access = public)
-        function obj = Fuselage(fuselage_type, length, width, interference_factor, options)
+        function obj = Fuselage(options)
             % FUSELAGE Construct a Fuselage object using two dimensions and
             % the wetted area modelling method. The hotdog method is useful
             % for early estimates but should be replaced with more accurate
             % wetted area models.
             arguments
-                fuselage_type (1,1) string {mustBeMember(fuselage_type, [ ...
+                options.fuselage_type (1,1) string {mustBeMember(options.fuselage_type, [ ...
                     "Hotdog, Raymer eq. 12.31" ...
                     "Nicolai eq. xx.xx" ...
-                    "Nicolai eq. xx.xx"])}
-                length
-                width
-                interference_factor = 1
-                options.?Fuselage
+                    "Nicolai eq. xx.xx"])} = "Hotdog, Raymer eq. 12.31"
+                options.length = 0
+                options.width = 0
+                options.mass = 0
             end
 
-            if nargin == 0
-                return
-            end
-            
-            obj@Component(interference_factor)
-            obj.length = ul(length);
-            obj.width = ul(width);
-
-            set(obj, ul(options))
+            obj@Component(1);
+            obj.fuselage_type = options.fuselage_type;
+            obj.length = ul(options.length);
+            obj.width = ul(options.width);
+            obj.mass = ul(options.mass);
+            obj.wetted_area = pi * obj.width * obj.length * (1 - 2 * obj.width / obj.length)^(2/3) * (1 + (obj.width / obj.length)^2);
         end
 
         function output = calc_cd0(obj, ref_wing_area)
@@ -70,11 +64,7 @@ classdef Fuselage < Component
 
     methods
         function fineness_ratio = get.fineness_ratio(obj)
-            fineness_ratio = obj.length / obj.drag;
-        end
-
-        function wetted_area = get.wetted_area(obj)
-            wetted_area = pi * obj.width * obj.length * (1 - 2 * obj.width / obj.length)^(2/3) * (1 + (obj.width / obj.length)^2);
+            fineness_ratio = obj.length / obj.width;
         end
     end
 end

@@ -23,12 +23,37 @@ Y_empty_log = log(Y_empty);
 [xn, xps] = mapminmax(X');
 xn = xn';
 
-n_runs = 1000; % DO NOT ENSEMBLE WITH NN, it's complete GIGO on this dataset
+n_runs = 300; % DO NOT ENSEMBLE WITH NN, it's complete GIGO on this dataset
 mtow_nn_values = zeros(n_runs, 1);
 mu_mtow_values = zeros(n_runs, 1);
 sigma_mtow_values = zeros(n_runs, 1);
 mu_empty_values = zeros(n_runs, 1);
 sigma_empty_values = zeros(n_runs, 1);
+
+% Build Sunfish feature vector from instantiated project defaults.
+u = symunit;
+sunfish_cfg = instantiate_aircraft_components(0, profile="deliverables", build_components=false);
+
+sunfish_values = containers.Map;
+sunfish_values('numberofengines') = 2;
+sunfish_values('maxthrustkn') = ul(43000 * u.lbf, u.kN);
+sunfish_values('lengthm') = ul(sunfish_cfg.defaults.fuselage.length, u.m);
+sunfish_values('wingspanm') = ul(sunfish_cfg.defaults.wing.wingspan, u.m);
+sunfish_values('maxspeedmach') = sunfish_cfg.design.Combat_Speed;
+sunfish_values('serviceceilingkm') = ul(sunfish_cfg.design.h_cruise_sup, u.km);
+
+sunfish_params = zeros(1, numel(param_names));
+for p = 1:numel(param_names)
+    key = regexprep(lower(param_names{p}), '[^a-z0-9]', '');
+    if isKey(sunfish_values, key)
+        sunfish_params(p) = double(sunfish_values(key));
+    else
+        error("NNWeightSizer:MissingSunfishFeature", ...
+            "No Sunfish mapping available for feature '%s'.", param_names{p});
+    end
+end
+
+sunfish_norm = mapminmax('apply', sunfish_params', xps)';
 
 
 %% Train/test split
@@ -93,9 +118,6 @@ for i = 1:n_runs
     RMSE_empty = sqrt(mean((empty_mean - y_empty_test).^2));
     
     %% Gaussian predictions
-    
-    sunfish_params = [1, 191, 12, 17.2, 1.6, 20];
-    sunfish_norm = mapminmax('apply', sunfish_params', xps)';
     
     % NN MTOW
     mtow_nn = exp(predict(net_mtow, sunfish_norm));

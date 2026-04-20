@@ -28,38 +28,42 @@ classdef FlightPhase
     end
     
     methods
-        function obj = FlightPhase(altitude, load_factor, engine_config, options)
+        function obj = FlightPhase(options)
             % FLIGHTPHASE Construct and initialise a FlightPhase object
             %   Currently assumes use of a low-bypass turbofan. Engine
             %   selection will be abstracted to a higher-level class (e.g.:
             %   'Aircraft' if implemented.
 
             arguments
-                altitude (1,1)
-                load_factor (1,1)
-                engine_config (1,1) string {mustBeMember(engine_config, [ ...
+                options.altitude = 0
+                options.load_factor (1,1) = 1
+                options.engine_config (1,1) string {mustBeMember(options.engine_config, [ ...
                     "High-bypass turbofan" ...
                     "Low-bypass turbofan, wet thrust" ...
                     "Low-bypass turbofan, dry thrust" ...
                     "Turbojet, wet thrust" ...
                     "Turbojet, dry thrust" ...
-                    "Turboprop"])}
-                options.?FlightPhase
+                    "Turboprop"])} = "Low-bypass turbofan, dry thrust"
+                options.velocity = []
+                options.mach_number = []
+                options.dv_dt = 0
+                options.dh_dt = 0
+                options.throttle_ratio (1,1) double {mustBePositive} = 1.04
             end
 
-            if nargin == 0
+            obj.altitude = ul(options.altitude);
+            obj.air_density = Atm.density(obj.altitude);
+            obj.sonic_speed = Atm.sonic_speed(obj.altitude);
+            obj.load_factor = options.load_factor;
+            obj.throttle_ratio = options.throttle_ratio;
+
+            has_velocity = ~isempty(options.velocity);
+            has_mach = ~isempty(options.mach_number);
+            if ~(has_velocity || has_mach)
                 return
             end
 
-            if has_units(altitude)
-                altitude = ul(unitConvert(altitude, obj.tempunits.m));
-            end
-            obj.altitude = altitude;
-            [~, obj.sonic_speed, ~, obj.air_density] = atmosisa(obj.altitude);
-            obj.load_factor = load_factor;
-
-            assert(isfield(options, "velocity") || isfield(options, "mach_number"), "Airspeed is required. Please supply Mach # or velocity.")
-            if isfield(options, "mach_number") % Default to Mach number definition
+            if has_mach % Default to Mach number definition
                 obj.mach_number = options.mach_number;
                 obj.velocity = obj.mach_number * obj.sonic_speed;
             else
@@ -72,22 +76,19 @@ classdef FlightPhase
 
             % Cannot simply set(obj, options) since additional validation is
             % applied to name-value arguments
-            if isfield(options, "dv_dt")
-                if has_units(options.dv_dt)
-                    options.dv_dt = ul(unitConvert(options.dv_dt, obj.tempunits.m / obj.tempunits.s^2));
-                end
-                obj.dv_dt = options.dv_dt;
+            if has_units(options.dv_dt)
+                options.dv_dt = ul(unitConvert(options.dv_dt, obj.tempunits.m / obj.tempunits.s^2));
             end
-            if isfield(options, "dh_dt")
-                if has_units(options.dh_dt)
-                    options.dh_dt = ul(unitConvert(options.dh_dt, obj.tempunits.m / obj.tempunits.s));
-                end
-                obj.dh_dt = options.dh_dt;
+            obj.dv_dt = options.dv_dt;
+
+            if has_units(options.dh_dt)
+                options.dh_dt = ul(unitConvert(options.dh_dt, obj.tempunits.m / obj.tempunits.s));
             end
+            obj.dh_dt = options.dh_dt;
             
             % There has to be a better way to do this but I can't be
             % bothered to explore MATLAB's peculiarities at the moment
-            switch(engine_config)
+            switch(options.engine_config)
                 case "High-bypass turbofan"
                     obj.engine_config = 1;
                 case "Low-bypass turbofan, wet thrust"

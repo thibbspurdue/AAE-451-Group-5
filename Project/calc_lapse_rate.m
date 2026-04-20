@@ -26,50 +26,50 @@ function alpha = calc_lapse_rate(altitude, mach_number, throttle_ratio, engine_c
     end
 
     gamma = 1.4; % air heat capacity ratio, assumed constant, ul
-    alpha = zeros(length(altitude));
+    alpha = zeros(size(altitude));
     for i = 1:length(altitude)
-        theta_0 = Atm.temp(altitude) / Atm.temp(0) * (1 + ((gamma - 1) / 2) * mach_number^2);
-        delta_0 = Atm.pressure(altitude) / Atm.pressure(0) * (1 + ((gamma - 1) / 2) * mach_number^2)^(gamma / (gamma - 1));
+        theta_0 = Atm.temp(altitude(i)) / Atm.temp(0) * (1 + ((gamma - 1) / 2) * mach_number(i)^2);
+        delta_0 = Atm.pressure(altitude(i)) / Atm.pressure(0) * (1 + ((gamma - 1) / 2) * mach_number(i)^2)^(gamma / (gamma - 1));
 
         % M_0_break = sqrt(2 ./ (gamma - 1) .* (theta_0_break - 1)); % Mach # ASL at which theta break is reached, Mattingly eq. D.7
         switch engine_configuration(i)
             case 1 % High bypass ratio turbofan, M_0 < 0.9
-                if theta_0(i) <= throttle_ratio(i)
-                    alpha(i) = delta_0(i) * (1 - 0.49 * sqrt(mach_number(i)));
+                if theta_0 <= throttle_ratio(i)
+                    alpha(i) = delta_0 * (1 - 0.49 * sqrt(mach_number(i)));
                 else
-                    alpha(i) = delta_0(i) * (1 - 0.49 * sqrt(mach_number(i)) - (3 * (theta_0(i) - throttle_ratio(i))) / (1.5 + mach_number(i)));
+                    alpha(i) = delta_0 * (1 - 0.49 * sqrt(mach_number(i)) - (3 * (theta_0 - throttle_ratio(i))) / (1.5 + mach_number(i)));
                 end
             case 2 % Low bypass ratio, mixed flow turbofan, wet/maximum thrust
-                if theta_0(i) <= throttle_ratio(i)
-                    alpha(i) = delta_0(i);
+                if theta_0 <= throttle_ratio(i)
+                    alpha(i) = delta_0;
                 else
-                    alpha(i) = delta_0(i) * (1 - 3.5 * (theta_0(i) - throttle_ratio(i)) / theta_0(i));
+                    alpha(i) = delta_0 * (1 - 3.5 * (theta_0 - throttle_ratio(i)) / theta_0);
                 end
             case 3 % Low bypass ratio, mixed flow turbofan, dry/military thrust
-                if theta_0(i) <= throttle_ratio(i)
-                    alpha(i) = 0.6 * delta_0(i);
+                if theta_0 <= throttle_ratio(i)
+                    alpha(i) = 0.6 * delta_0;
                 else
-                    alpha(i) = 0.6 * delta_0(i) * (1 - 3.5 * (theta_0(i) - throttle_ratio(i)) / theta_0(i));
+                    alpha(i) = 0.6 * delta_0 * (1 - 3.5 * (theta_0 - throttle_ratio(i)) / theta_0);
                 end
             case 4 % Turbojet, wet/maximum thrust
-                if theta_0(i) <= throttle_ratio(i)
-                    alpha(i) = delta_0(i) * (1 - 0.3 * (theta_0(i) - 1) - 0.1 * sqrt(mach_number(i)));
+                if theta_0 <= throttle_ratio(i)
+                    alpha(i) = delta_0 * (1 - 0.3 * (theta_0 - 1) - 0.1 * sqrt(mach_number(i)));
                 else
-                    alpha(i) = delta_0(i) * (1 - 0.3 * (theta_0(i) - 1) - 0.1 * sqrt(mach_number(i)) - (1.5 * (theta_0(i) - throttle_ratio(i)) / theta_0(i)));
+                    alpha(i) = delta_0 * (1 - 0.3 * (theta_0 - 1) - 0.1 * sqrt(mach_number(i)) - (1.5 * (theta_0 - throttle_ratio(i)) / theta_0));
                 end
             case 5 % Turbojet, dry/military thrust
-                if theta_0(i) <= throttle_ratio(i)
-                    alpha(i) = 0.8 * delta_0(i) * (1 - 0.16 * sqrt(mach_number(i)));
+                if theta_0 <= throttle_ratio(i)
+                    alpha(i) = 0.8 * delta_0 * (1 - 0.16 * sqrt(mach_number(i)));
                 else
-                    alpha(i) = 0.8 * delta_0(i) * (1 - 0.16 * sqrt(mach_number(i)) - (24 * (theta_0(i) - throttle_ratio(i)) / (theta_0(i) * (9 + mach_number(i)))));
+                    alpha(i) = 0.8 * delta_0 * (1 - 0.16 * sqrt(mach_number(i)) - (24 * (theta_0 - throttle_ratio(i)) / (theta_0 * (9 + mach_number(i)))));
                 end
             case 6 % Turboprop
                 if mach_number <= 0.1
-                    alpha(i) = delta_0(i);
-                elseif theta_0(i) <= throttle_ratio(i)
-                        alpha(i) = delta_0(i) * (1 - 0.96 * (mach_number(i) - 1)^(1/4));
+                    alpha(i) = delta_0;
+                elseif theta_0 <= throttle_ratio(i)
+                        alpha(i) = delta_0 * (1 - 0.96 * (mach_number(i) - 1)^(1/4));
                 else
-                    alpha(i) = delta_0(i) * (1 - 0.96 * (mach_number(i) - 1)^(1/4) - (3 * (theta_0(i) - throttle_ratio(i)) / (8.13 * (mach_number(i) - 0.1))));
+                    alpha(i) = delta_0 * (1 - 0.96 * (mach_number(i) - 1)^(1/4) - (3 * (theta_0 - throttle_ratio(i)) / (8.13 * (mach_number(i) - 0.1))));
                 end
         end
     end
